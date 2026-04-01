@@ -1,0 +1,64 @@
+# Global .gitignore for accounting-doc-system
+
+# Dependencies
+node_modules/
+**/node_modules/
+package-lock.json (Optional, some keep it, but user said "tudo que é possível". Wait, usually package-lock.json IS committed. I won't ignore it.)
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+.next/
+.cache/
+
+# Environment Variables
+*.env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+**/error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor/IDE folders
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sublime-project
+*.sublime-workspace
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Prisma
+/backend/prisma/migrations/ (Wait, migrations SHOULD be committed. I'll NOT ignore these.)
+*.db
+*.db-journal
+
+# Misc
+.vercel/
+.netlify/
+.turbo/
+. agents/ (Wait, the user in a previous conversation asked to ignore .agents and specs. I should check Conversation Logs if possible, but the prompt says 92ccf292... c156a3da... summary says "Specifically adding the .agents and specs directories to be ignored".)
+.agents/
+specs/

@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Enums for Company and Obligations
+
+enum TaxRegime {
+  SIMPLES_NACIONAL
+  LUCRO_PRESUMIDO
+  LUCRO_REAL
+}
+
+enum ActivityType {
+  SERVICO
+  COMERCIO
+  INDUSTRIA
+}
+
+enum DeadlineType {
+  FEDERAL
+  ESTADUAL
+  MUNICIPAL
+}
+
+enum Periodicity {
+  MENSAL
+  BIMESTRAL
+  TRIMESTRAL
+  ANUAL
+}
+
+enum DeadlineStatus {
+  PENDENTE
+  ENTREGUE
+  ATRASADO
+}
+
+enum ConditionOperator {
+  EQUALS
+  CONTAINS
+}
+
+model Company {
+  id          String   @id @default(uuid())
+  internalCode String? @unique // "código interno único"
+  corporateName String // "razão social"
+  tradeName   String // "fantasia"
+  cnpj        String   @unique
+  stateRegistration String? // "inscrição estadual" (or null if exempt)
+  isExemptStateRegistration Boolean @default(false)
+  
+  city        String
+  fiscalObservations String?
+
+  taxRegime   TaxRegime?
+  
+  // Activities 
+  activities  ActivityType[] 
+
+  // Movement Booleans
+  hasMovement     Boolean @default(false)
+  hasOutboundDocs Boolean @default(false) // "notas de saída"
+  hasInboundDocs  Boolean @default(false) // "notas de entrada"
+  hasServiceDocs  Boolean @default(false) // "notas de serviço"
+
+  // Tax Booleans
+  taxSimplesNacional Boolean @default(false)
+  taxIss             Boolean @default(false)
+  taxIcms            Boolean @default(false)
+  taxPis             Boolean @default(false)
+  taxCofins          Boolean @default(false)
+  taxIrpj            Boolean @default(false)
+  taxCsll            Boolean @default(false)
+
+  // Obligation Booleans 
+  obFima              Boolean @default(false)
+  obSintegra          Boolean @default(false)
+  obSpedIcms          Boolean @default(false)
+  obEfdContribuicoes  Boolean @default(false)
+  obDctfWeb           Boolean @default(false)
+
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Existing relation
+  controls MonthlyControl[]
+  
+  // New Relations
+  obligations CompanyObligation[]
+  deadlines   Deadline[]
+}
+
+model Obligation {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  type        DeadlineType
+  periodicity Periodicity
+  
+  // Due day configuration
+  dueDay      Int // Fixed day of month for due date
+
+  isActive    Boolean @default(true)
+  
+  conditions  ObligationCondition[]
+  companies   CompanyObligation[]
+  deadlines   Deadline[]
+}
+
+model ObligationCondition {
+  id           String   @id @default(uuid())
+  obligationId String
+  field        String // e.g., "taxRegime", "activities", "obSpedIcms"
+  operator     ConditionOperator
+  value        String // e.g., "SIMPLES_NACIONAL", "true"
+  
+  obligation   Obligation @relation(fields: [obligationId], references: [id])
+}
+
+model CompanyObligation {
+  id           String   @id @default(uuid())
+  companyId    String
+  obligationId String
+  
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  
+  company      Company    @relation(fields: [companyId], references: [id])
+  obligation   Obligation @relation(fields: [obligationId], references: [id])
+
+  @@unique([companyId, obligationId])
+}
+
+model Deadline {
+  id           String         @id @default(uuid())
+  companyId    String
+  obligationId String
+  
+  month        Int
+  year         Int
+  dueDate      DateTime
+  
+  status       DeadlineStatus @default(PENDENTE)
+  
+  company      Company    @relation(fields: [companyId], references: [id])
+  obligation   Obligation @relation(fields: [obligationId], references: [id])
+  
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([companyId, obligationId, month, year])
+}
+
+// Keeping existing MonthlyControl to avoid breaking legacy code immediately, 
+// though it seems redundant with Deadline.
+enum DocumentStatus {
+  PENDING
+  DELIVERED
+  NO_DOCUMENTS
+}
+
+model MonthlyControl {
+  id          String         @id @default(uuid())
+  companyId   String
+  month       Int
+  year        Int
+  status      DocumentStatus @default(PENDING)
+  observation String?
+  updatedAt   DateTime       @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, month, year])
+}
