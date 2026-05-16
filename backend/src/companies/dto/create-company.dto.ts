@@ -1,7 +1,15 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsEnum, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  IsArray,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TaxRegime, ActivityType } from '@prisma/client';
-
+import { IsCnpj } from './is-cnpj.validator';
 export class CreateCompanyDto {
   @ApiProperty({ description: 'Internal unique code for the company' })
   @IsString()
@@ -21,7 +29,10 @@ export class CreateCompanyDto {
   @ApiProperty({ description: 'CNPJ (14 digits)' })
   @IsString()
   @IsNotEmpty()
-  // Add custom CNPJ validation logic if needed, usually done in service or custom validator
+  @IsCnpj()
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.replace(/\D/g, '') : value,
+  )
   cnpj: string;
 
   @ApiPropertyOptional({ description: 'State Registration Number' })
@@ -29,7 +40,10 @@ export class CreateCompanyDto {
   @IsOptional()
   stateRegistration?: string;
 
-  @ApiProperty({ description: 'Is Exempt from State Registration', default: false })
+  @ApiProperty({
+    description: 'Is Exempt from State Registration',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   isExemptStateRegistration?: boolean;
@@ -49,7 +63,11 @@ export class CreateCompanyDto {
   @IsOptional()
   taxRegime?: TaxRegime;
 
-  @ApiProperty({ enum: ActivityType, isArray: true, description: 'List of Activities' })
+  @ApiProperty({
+    enum: ActivityType,
+    isArray: true,
+    description: 'List of Activities',
+  })
   @IsArray()
   @IsEnum(ActivityType, { each: true })
   @IsOptional()

@@ -30,8 +30,10 @@ export const DocumentControl: React.FC = () => {
   // Fetch companies for the dropdown
   const { data: companies } = useQuery<Company[]>({
     queryKey: ['companies'],
-    queryFn: () => api.get('/companies').then(res => res.data),
+    queryFn: () => api.get('/companies', { params: { limit: 1000 } }).then(res => res.data?.data || []),
   });
+
+  console.log(companies);
 
   // Fetch controls when company and year are selected
   const { data: controls } = useQuery<MonthlyControl[]>({
@@ -104,8 +106,8 @@ export const DocumentControl: React.FC = () => {
   return (
     <div>
       <div style={{ marginBottom: 'var(--spacing-lg)' }}>
-        <h1>Controle Mensal de Documentos</h1>
-        <p>Gerencie o recebimento e envio de documentos mensais</p>
+        <h1>Recebimento de Documentos</h1>
+        <p>Acompanhe o recebimento mensal dos documentos físicos e digitais enviados pelo cliente.</p>
       </div>
 
       <div className="card">
@@ -170,7 +172,7 @@ export const DocumentControl: React.FC = () => {
                       textTransform: 'uppercase'
                     }}
                   >
-                    {status === 'DELIVERED' ? 'Entregue' : status === 'NO_DOCUMENTS' ? 'Sem Movimento' : 'Pendente'}
+                    {status === 'DELIVERED' ? 'Recebido' : status === 'NO_DOCUMENTS' ? 'Sem Movimento' : 'Pendente'}
                   </div>
                 </div>
 
@@ -181,7 +183,7 @@ export const DocumentControl: React.FC = () => {
                     onChange={(e) => handleStatusChange(index, e.target.value)}
                   >
                     <option value="PENDING">Pendente</option>
-                    <option value="DELIVERED">Entregue</option>
+                    <option value="DELIVERED">Recebido</option>
                     <option value="NO_DOCUMENTS">Sem Movimento</option>
                   </select>
                 </div>

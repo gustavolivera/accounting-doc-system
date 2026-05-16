@@ -9,7 +9,9 @@ import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
 @UseGuards(AuthGuard('jwt'))
 @Controller('monthly-controls')
 export class MonthlyControlsController {
-  constructor(private readonly monthlyControlsService: MonthlyControlsService) {}
+  constructor(
+    private readonly monthlyControlsService: MonthlyControlsService,
+  ) {}
 
   @Post()
   createOrUpdate(@Body() createMonthlyControlDto: CreateMonthlyControlDto) {
@@ -19,7 +21,10 @@ export class MonthlyControlsController {
   @Get()
   @ApiQuery({ name: 'companyId', required: false })
   @ApiQuery({ name: 'year', required: false })
-  findAll(@Query('companyId') companyId?: string, @Query('year') year?: number) {
+  findAll(
+    @Query('companyId') companyId?: string,
+    @Query('year') year?: number,
+  ) {
     return this.monthlyControlsService.findAll(companyId, year);
   }
 }

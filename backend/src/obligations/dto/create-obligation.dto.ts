@@ -1,4 +1,15 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsInt, IsBoolean, ValidateNested, IsArray, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsInt,
+  IsBoolean,
+  ValidateNested,
+  IsArray,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { DeadlineType, Periodicity, ConditionOperator } from '@prisma/client';
@@ -49,7 +60,10 @@ export class CreateObligationDto {
   @IsOptional()
   isActive?: boolean;
 
-  @ApiProperty({ type: [ObligationConditionDto], description: 'List of conditions' })
+  @ApiProperty({
+    type: [ObligationConditionDto],
+    description: 'List of conditions',
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ObligationConditionDto)

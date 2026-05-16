@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface User {
   id: string;
   email: string;
+  role: 'ADMIN' | 'OPERATOR';
 }
 
 interface AuthContextType {
@@ -10,6 +11,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   loading: boolean;
 }
 
@@ -28,12 +30,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
+  // T006: Listen for global 401 logout events dispatched by api.ts interceptor.
+  // This keeps api.ts and AuthContext decoupled (no circular imports).
+  useEffect(() => {
+    const handleAuthLogout = () => {
+      setUser(null);
+    };
+    window.addEventListener('auth:logout', handleAuthLogout);
+    return () => {
+      window.removeEventListener('auth:logout', handleAuthLogout);
+    };
+  }, []);
+
   const login = (token: string, user: User) => {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     setUser(user);
-    // Reload to ensure headers are updated? No, interceptor handles it. 
-    // Usually good to navigate.
   };
 
   const logout = () => {
@@ -44,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, isAdmin: user?.role === 'ADMIN', loading }}>
       {children}
     </AuthContext.Provider>
   );

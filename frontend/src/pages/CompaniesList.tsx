@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '../services/api';
 import { Link } from 'react-router-dom';
@@ -13,14 +13,37 @@ interface Company {
   isActive: boolean;
 }
 
+interface PaginatedResponse {
+  data: Company[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const CompaniesList: React.FC = () => {
-  const { data: companies, isLoading } = useQuery<Company[]>({
-    queryKey: ['companies'],
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const limit = 10;
+
+  const { data, isLoading } = useQuery<PaginatedResponse>({
+    queryKey: ['companies', page, search],
     queryFn: async () => {
-      const response = await api.get('/companies');
+      const response = await api.get('/companies', {
+        params: { page, limit, search }
+      });
       return response.data;
     },
   });
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearch(searchInput);
+    setPage(1);
+  };
+
+  const companies = data?.data || [];
 
   return (
     <div>
@@ -32,6 +55,20 @@ export const CompaniesList: React.FC = () => {
         <Link to="/companies/new" className="btn btn-primary">
           + Nova Empresa
         </Link>
+      </div>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem' }}>
+          <input 
+            type="text" 
+            placeholder="Buscar por Razão Social ou CNPJ..." 
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="input"
+            style={{ maxWidth: '300px' }}
+          />
+          <button type="submit" className="btn btn-secondary">Buscar</button>
+        </form>
       </div>
       
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -53,7 +90,7 @@ export const CompaniesList: React.FC = () => {
                    <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>Carregando...</td>
                  </tr>
               )}
-              {companies?.map((company) => (
+              {companies.map((company) => (
                 <tr key={company.id}>
                   <td>
                     <span style={{ fontFamily: 'monospace', background: 'var(--color-gray-100)', padding: '2px 6px', borderRadius: '4px' }}>
@@ -81,16 +118,41 @@ export const CompaniesList: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!isLoading && companies?.length === 0 && (
+              {!isLoading && companies.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-                    Nenhuma empresa cadastrada ainda.
+                    Nenhuma empresa encontrada.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+        
+        {data && data.totalPages > 1 && (
+          <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>
+              Mostrando {companies.length} de {data.total} registros
+            </span>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Anterior
+              </button>
+              <span style={{ padding: '0.5rem' }}>Página {page} de {data.totalPages}</span>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                onClick={() => setPage(p => Math.min(data.totalPages, p + 1))}
+                disabled={page === data.totalPages}
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

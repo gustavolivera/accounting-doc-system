@@ -3,17 +3,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateObligationDto } from './dto/create-obligation.dto';
 import { UpdateObligationDto } from './dto/update-obligation.dto';
 import { RuleEngineService } from '../rules/rule-engine.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class ObligationsService {
   constructor(
     private prisma: PrismaService,
-    private ruleEngine: RuleEngineService
+    private ruleEngine: RuleEngineService,
+    private auditService: AuditService,
   ) {}
 
-  async create(createObligationDto: CreateObligationDto) {
+  async create(createObligationDto: CreateObligationDto, executorId: string) {
     const { conditions, ...data } = createObligationDto;
-    
+
     const obligation = await this.prisma.obligation.create({
       data: {
         ...data,
@@ -23,17 +25,44 @@ export class ObligationsService {
       },
     });
 
-    // Trigger rule evaluation
+    await this.auditService.logAction(
+      executorId,
+      'CREATE',
+      'OBLIGATION',
+      obligation.id,
+      { name: obligation.name },
+    );
     await this.ruleEngine.evaluateForObligation(obligation.id);
 
     return obligation;
   }
 
-  findAll() {
-    return this.prisma.obligation.findMany({
-      where: { isActive: true },
-      include: { conditions: true },
-    });
+  async findAll(page: number = 1, limit: number = 50, search?: string) {
+    const skip = (page - 1) * limit;
+    const where: any = { isActive: true };
+
+    if (search) {
+      where.name = { contains: search, mode: 'insensitive' };
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.obligation.findMany({
+        where,
+        skip,
+        take: limit,
+        include: { conditions: true },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.obligation.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {
@@ -45,10 +74,13 @@ export class ObligationsService {
     return obligation;
   }
 
-  async update(id: string, updateObligationDto: UpdateObligationDto) {
+  async update(
+    id: string,
+    updateObligationDto: UpdateObligationDto,
+    executorId: string,
+  ) {
     const { conditions, ...data } = updateObligationDto;
 
-    // If conditions are updated, simpler strategy: delete all old, create new.
     if (conditions) {
       await this.prisma.obligationCondition.deleteMany({
         where: { obligationId: id },
@@ -59,23 +91,39 @@ export class ObligationsService {
       where: { id },
       data: {
         ...data,
-        conditions: conditions ? {
-          create: conditions,
-        } : undefined,
+        conditions: conditions
+          ? {
+              create: conditions,
+            }
+          : undefined,
       },
       include: { conditions: true },
     });
 
-    // Trigger rule evaluation
+    await this.auditService.logAction(
+      executorId,
+      'UPDATE',
+      'OBLIGATION',
+      obligation.id,
+      { name: obligation.name },
+    );
     await this.ruleEngine.evaluateForObligation(obligation.id);
 
     return obligation;
   }
 
-  async remove(id: string) {
-    return this.prisma.obligation.update({
+  async remove(id: string, executorId: string) {
+    const obligation = await this.prisma.obligation.update({
       where: { id },
       data: { isActive: false },
     });
+    await this.auditService.logAction(
+      executorId,
+      'DELETE',
+      'OBLIGATION',
+      obligation.id,
+      { name: obligation.name },
+    );
+    return obligation;
   }
 }

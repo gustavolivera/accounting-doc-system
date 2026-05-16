@@ -52,14 +52,18 @@ function AppRoutes() {
   );
 }
 
+import { UIProvider } from './context/UIContext';
+
 const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
-      </AuthProvider>
+      <UIProvider>
+        <AuthProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </AuthProvider>
+      </UIProvider>
     </QueryClientProvider>
   );
 };

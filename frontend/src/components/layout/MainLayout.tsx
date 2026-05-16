@@ -16,10 +16,13 @@ export const MainLayout: React.FC = () => {
     { to: '/', label: 'Início', icon: '🏠' },
     { to: '/companies', label: 'Empresas', icon: '🏢' },
     { to: '/documents', label: 'Controle Mensal', icon: '📄' },
-    { to: '/obligations', label: 'Obrigações', icon: '📋' },
     { to: '/deadlines', label: 'Prazos', icon: '⏰' },
-    { to: '/users', label: 'Usuários', icon: '👥' },
   ];
+
+  if (useAuth().isAdmin) {
+    navItems.splice(3, 0, { to: '/obligations', label: 'Obrigações', icon: '📋' });
+    navItems.push({ to: '/users', label: 'Usuários', icon: '👥' });
+  }
 
   return (
     <div className="app-container">

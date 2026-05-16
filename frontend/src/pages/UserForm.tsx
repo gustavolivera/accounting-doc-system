@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '../services/api';
+import { useUI } from '../context/UIContext';
 
 export const UserForm: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useUI();
   const isEdit = !!id;
 
   const [form, setForm] = useState({
@@ -33,10 +35,11 @@ export const UserForm: React.FC = () => {
       return api.post('/users', data);
     },
     onSuccess: () => {
+      showToast(isEdit ? 'Usuário atualizado com sucesso' : 'Usuário criado com sucesso', 'success');
       navigate('/users');
     },
     onError: (err: any) => {
-        alert(err.response?.data?.message || 'Failed to save user');
+        showToast(err.response?.data?.message || 'Failed to save user', 'error');
     }
   });
 

@@ -10,6 +10,8 @@ import { UsersModule } from './users/users.module';
 import { RulesModule } from './rules/rules.module';
 import { ObligationsModule } from './obligations/obligations.module';
 import { DeadlinesModule } from './deadlines/deadlines.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { DeadlinesModule } from './deadlines/deadlines.module';
     DeadlinesModule,
     MonthlyControlsModule,
     UsersModule,
+    DashboardModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],

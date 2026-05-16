@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUI } from '../context/UIContext';
 
 const TYPES = ['FEDERAL', 'ESTADUAL', 'MUNICIPAL'];
 const PERIODICITIES = ['MENSAL', 'BIMESTRAL', 'TRIMESTRAL', 'ANUAL'];
@@ -28,6 +29,7 @@ export const ObligationForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useUI();
   const isEdit = !!id;
 
   const [form, setForm] = useState({
@@ -63,8 +65,12 @@ export const ObligationForm: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['obligations'] });
+      showToast(isEdit ? 'Obrigação atualizada com sucesso' : 'Obrigação criada com sucesso', 'success');
       navigate('/obligations');
     },
+    onError: () => {
+      showToast('Erro ao salvar a obrigação', 'error');
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,6 +98,26 @@ export const ObligationForm: React.FC = () => {
       newConditions[index] = { ...newConditions[index], [field]: value };
       return { ...prev, conditions: newConditions };
     });
+  };
+
+  const [previewData, setPreviewData] = useState<{ totalActiveCompanies: number; affectedCount: number; affectedCompanies: any[] } | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+
+  const handlePreview = async () => {
+    setIsPreviewing(true);
+    try {
+      const criteria = form.conditions.map(c => ({
+        criterionCode: c.field,
+        operator: c.operator,
+        value: c.value
+      }));
+      const res = await api.post('/rules/preview', { criteria });
+      setPreviewData(res.data);
+    } catch (err) {
+      showToast('Erro ao pré-visualizar as regras.', 'error');
+    } finally {
+      setIsPreviewing(false);
+    }
   };
 
   if (isEdit && isLoading) return <div>Carregando...</div>;
@@ -259,6 +285,31 @@ export const ObligationForm: React.FC = () => {
                ))}
             </div>
             <p style={{ fontSize: '0.75rem', marginTop: '0.5rem' }}>* A empresa deve atender a <strong>TODAS</strong> as condições para que a obrigação seja aplicada.</p>
+            
+            <div style={{ marginTop: '1rem' }}>
+               <button 
+                 type="button" 
+                 className="btn btn-secondary" 
+                 onClick={handlePreview} 
+                 disabled={isPreviewing || form.conditions.length === 0}
+               >
+                 {isPreviewing ? 'Calculando...' : 'Pré-visualizar Impacto'}
+               </button>
+            </div>
+
+            {previewData && (
+              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'var(--color-info-bg)', border: '1px solid var(--color-info)', borderRadius: 'var(--radius-md)' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-info)' }}>Resultado da Simulação</h4>
+                <p style={{ margin: 0, fontSize: '0.875rem' }}>
+                  <strong>{previewData.affectedCount}</strong> de <strong>{previewData.totalActiveCompanies}</strong> empresas ativas se enquadram nestas regras.
+                </p>
+                {previewData.affectedCount > 0 && (
+                  <div style={{ marginTop: '0.5rem', maxHeight: '100px', overflowY: 'auto', fontSize: '0.75rem', background: 'white', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+                     {previewData.affectedCompanies.map(c => <div key={c.id}>- {c.tradeName}</div>)}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </form>

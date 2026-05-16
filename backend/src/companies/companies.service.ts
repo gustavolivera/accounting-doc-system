@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,7 +13,7 @@ import { RuleEngineService } from '../rules/rule-engine.service';
 export class CompaniesService {
   constructor(
     private prisma: PrismaService,
-    private ruleEngine: RuleEngineService
+    private ruleEngine: RuleEngineService,
   ) {}
 
   async create(createCompanyDto: CreateCompanyDto) {
@@ -25,20 +29,47 @@ export class CompaniesService {
         where: { internalCode: createCompanyDto.internalCode },
       });
       if (existingCode) {
-        throw new ConflictException('Company with this Internal Code already exists');
+        throw new ConflictException(
+          'Company with this Internal Code already exists',
+        );
       }
     }
 
-    const company = await this.prisma.company.create({ data: createCompanyDto });
+    const company = await this.prisma.company.create({
+      data: createCompanyDto,
+    });
     await this.ruleEngine.evaluateForCompany(company.id);
     return company;
   }
 
-  findAll() {
-    return this.prisma.company.findMany({
-      where: { isActive: true },
-      orderBy: { tradeName: 'asc' },
-    });
+  async findAll(page: number = 1, limit: number = 50, search?: string) {
+    const skip = (page - 1) * limit;
+    const where: any = { isActive: true };
+
+    if (search) {
+      where.OR = [
+        { tradeName: { contains: search, mode: 'insensitive' } },
+        { cnpj: { contains: search } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.company.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { tradeName: 'asc' },
+      }),
+      this.prisma.company.count({ where }),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {

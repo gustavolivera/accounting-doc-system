@@ -11,17 +11,9 @@ export const Dashboard: React.FC = () => {
     queryFn: () => api.get('/companies').then(res => res.data),
   });
 
-  const { data: pendingCount } = useQuery({
-    queryKey: ['pending-controls-dashboard', companies, year],
-    queryFn: async () => {
-       if (!companies) return 0;
-       const response = await api.get('/monthly-controls', { params: { year } });
-       const controls = response.data;
-       const explicitPending = controls.filter((c: any) => c.status === 'PENDING');
-       // Simplified logic for dashboard MVP
-       return explicitPending.length;
-    },
-    enabled: !!companies,
+  const { data: metrics } = useQuery({
+    queryKey: ['dashboard-metrics', year],
+    queryFn: () => api.get('/dashboard/metrics', { params: { year } }).then(res => res.data),
   });
 
   return (
@@ -41,11 +33,15 @@ export const Dashboard: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-xl)' }}>
          <div className="card" style={{ marginBottom: 0 }}>
            <h3 style={{ marginTop: 0 }}>Empresas Ativas</h3>
-           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-primary-600)', marginBottom: 0 }}>{companies?.length || 0}</p>
+           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-primary-600)', marginBottom: 0 }}>{metrics?.totalCompanies || 0}</p>
          </div>
          <div className="card" style={{ marginBottom: 0 }}>
            <h3 style={{ marginTop: 0 }}>Pendências ({year})</h3>
-           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-danger)', marginBottom: 0 }}>{pendingCount ?? 0}</p>
+           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-danger)', marginBottom: 0 }}>{metrics?.pendingDeadlines ?? 0}</p>
+         </div>
+         <div className="card" style={{ marginBottom: 0 }}>
+           <h3 style={{ marginTop: 0 }}>Obrigações Entregues</h3>
+           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-success)', marginBottom: 0 }}>{metrics?.deliveredDeadlines ?? 0}</p>
          </div>
       </div>
 
@@ -65,8 +61,8 @@ export const Dashboard: React.FC = () => {
             📄
           </div>
           <div>
-            <div style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>Controle Mensal</div>
-            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Gerenciar documentos</div>
+            <div style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>Recebimento de Docs</div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Acompanhar recepção mensal</div>
           </div>
         </Link>
         <Link to="/deadlines" className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', transition: 'transform 0.2s', cursor: 'pointer', marginBottom: 0, textDecoration: 'none' }}>

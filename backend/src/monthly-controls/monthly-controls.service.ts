@@ -10,7 +10,9 @@ export class MonthlyControlsService {
   async createOrUpdate(dto: CreateMonthlyControlDto) {
     const { companyId, month, year, ...data } = dto;
     // Check if company exists
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
     if (!company) throw new BadRequestException('Company not found');
 
     return this.prisma.monthlyControl.upsert({

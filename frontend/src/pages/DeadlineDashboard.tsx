@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
+import { useUI } from '../context/UIContext';
 
 interface Deadline {
   id: string;
@@ -10,6 +11,15 @@ interface Deadline {
   status: 'PENDENTE' | 'ENTREGUE' | 'ATRASADO';
   company: { tradeName: string };
   obligation: { name: string; type: string };
+  events?: Array<{ status: string; observation?: string; evidenceUrl?: string; createdAt: string; user?: { email: string } }>;
+}
+
+interface PaginatedResponse {
+  data: Deadline[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 const formatDate = (dateString: string) => {
@@ -18,31 +28,38 @@ const formatDate = (dateString: string) => {
 
 export const DeadlineDashboard: React.FC = () => {
   const queryClient = useQueryClient();
+  const { showPrompt, showToast } = useUI();
+  const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
     status: '',
     company: '',
   });
+  const limit = 10;
 
-  const { data: deadlines, isLoading } = useQuery<Deadline[]>({
-    queryKey: ['deadlines'],
-    queryFn: () => api.get('/deadlines').then(res => res.data),
+  const { data, isLoading } = useQuery<PaginatedResponse>({
+    queryKey: ['deadlines', page, filters.company],
+    queryFn: () => api.get('/deadlines', { params: { page, limit, search: filters.company } }).then(res => res.data),
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => 
-      api.patch(`/deadlines/${id}/status?status=${status}`),
+    mutationFn: ({ id, status, observation, evidenceUrl }: { id: string; status: string; observation?: string; evidenceUrl?: string; }) => 
+      api.patch(`/deadlines/${id}/delivery-state`, { status, observation, evidenceUrl }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deadlines'] });
+      showToast('Status atualizado com sucesso', 'success');
     },
+    onError: () => {
+      showToast('Erro ao atualizar o status', 'error');
+    }
   });
 
-  const filteredDeadlines = deadlines?.filter(d => {
+  const rawDeadlines = data?.data || [];
+  const filteredDeadlines = rawDeadlines.filter(d => {
     if (filters.year && d.year !== Number(filters.year)) return false;
     if (filters.month && d.month !== Number(filters.month)) return false;
     if (filters.status && d.status !== filters.status) return false;
-    if (filters.company && !d.company.tradeName.toLowerCase().includes(filters.company.toLowerCase())) return false;
     return true;
   });
 
@@ -61,9 +78,13 @@ export const DeadlineDashboard: React.FC = () => {
         </div>
         <button 
            className="btn btn-primary" 
-           onClick={() => api.get('/deadlines/generate').then(() => queryClient.invalidateQueries({ queryKey: ['deadlines'] }))}
+           onClick={() => api.post('/deadlines/generate', { year: filters.year }).then(() => {
+             queryClient.invalidateQueries({ queryKey: ['deadlines'] });
+             showToast('Prazos gerados com sucesso!', 'success');
+           })}
+           title="Gera os prazos para o ano selecionado no filtro"
         >
-            Atualizar Prazos
+            Gerar para Ano {filters.year}
         </button>
       </div>
       
@@ -100,8 +121,11 @@ export const DeadlineDashboard: React.FC = () => {
             </div>
             <div className="col-4">
                  <div className="form-group">
-                    <label>Empresa</label>
-                    <input placeholder="Buscar nome..." value={filters.company} onChange={e => setFilters({...filters, company: e.target.value})} />
+                    <label>Empresa (Busca via Servidor)</label>
+                    <input placeholder="Buscar nome..." value={filters.company} onChange={e => {
+                      setFilters({...filters, company: e.target.value});
+                      setPage(1);
+                    }} />
                  </div>
             </div>
          </div>
@@ -122,7 +146,7 @@ export const DeadlineDashboard: React.FC = () => {
             </thead>
             <tbody>
               {isLoading && <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center' }}>Carregando...</td></tr>}
-              {filteredDeadlines?.map((d) => (
+              {filteredDeadlines.map((d) => (
                 <tr key={d.id}>
                   <td>
                      <span style={{ fontWeight: 500 }}>{formatDate(d.dueDate)}</span>
@@ -145,7 +169,19 @@ export const DeadlineDashboard: React.FC = () => {
                         <button 
                             className="btn btn-success btn-sm" 
                             style={{ padding: '2px 8px', fontSize: '0.75rem', height: '24px' }}
-                            onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'ENTREGUE' })}
+                            onClick={() => {
+                              showPrompt('Observação (opcional):', (observation) => {
+                                if (observation !== null) {
+                                  setTimeout(() => {
+                                    showPrompt('URL de Evidência (opcional):', (evidenceUrl) => {
+                                      if (evidenceUrl !== null) {
+                                        updateStatusMutation.mutate({ id: d.id, status: 'ENTREGUE', observation, evidenceUrl: evidenceUrl || undefined });
+                                      }
+                                    });
+                                  }, 100);
+                                }
+                              });
+                            }}
                         >
                             Entregar
                         </button>
@@ -153,15 +189,26 @@ export const DeadlineDashboard: React.FC = () => {
                         <button 
                             className="btn btn-secondary btn-sm"
                             style={{ padding: '2px 8px', fontSize: '0.75rem', height: '24px' }}
-                            onClick={() => updateStatusMutation.mutate({ id: d.id, status: 'PENDENTE' })}
+                            onClick={() => {
+                                showPrompt('Motivo da reabertura:', (observation) => {
+                                    if (observation) {
+                                        updateStatusMutation.mutate({ id: d.id, status: 'PENDENTE', observation });
+                                    }
+                                });
+                            }}
                         >
                             Reabrir
                         </button>
                     )}
+                    {d.events && d.events.length > 0 && (
+                      <div style={{ marginTop: '4px', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+                        Último evento: {new Date(d.events[d.events.length - 1].createdAt).toLocaleDateString()}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}
-              {!isLoading && filteredDeadlines?.length === 0 && (
+              {!isLoading && filteredDeadlines.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
                     Nenhum prazo encontrado com os filtros selecionados.
@@ -171,6 +218,30 @@ export const DeadlineDashboard: React.FC = () => {
             </tbody>
           </table>
         </div>
+        
+        {data && data.totalPages > 1 && (
+          <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: 'var(--text-secondary)' }}>
+              Página {data.page} de {data.totalPages} (Total: {data.total} registros)
+            </span>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Anterior
+              </button>
+              <button 
+                className="btn btn-secondary btn-sm" 
+                onClick={() => setPage(p => Math.min(data.totalPages, p + 1))}
+                disabled={page === data.totalPages}
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
