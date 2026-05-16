@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUI } from '../context/UIContext';
+import { Eye, Save, Trash2, X, Plus } from 'lucide-react';
 
 const TYPES = ['FEDERAL', 'ESTADUAL', 'MUNICIPAL'];
 const PERIODICITIES = ['MENSAL', 'BIMESTRAL', 'TRIMESTRAL', 'ANUAL'];
@@ -130,9 +131,11 @@ export const ObligationForm: React.FC = () => {
             <p style={{ marginBottom: 0 }}>Defina os detalhes e regras da obrigação</p>
          </div>
          <div style={{ display: 'flex', gap: '8px' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => navigate('/obligations')}>Cancelar</button>
-            <button type="button" className="btn btn-primary" onClick={handleSubmit}>
-                {mutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+            <button type="button" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => navigate('/obligations')}>
+              <X size={18} /> Cancelar
+            </button>
+            <button type="button" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={handleSubmit}>
+                <Save size={18} /> {mutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
             </button>
          </div>
       </div>
@@ -278,8 +281,9 @@ export const ObligationForm: React.FC = () => {
                       className="btn btn-danger btn-sm" 
                       onClick={() => removeCondition(index)}
                       title="Remover regra"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                     >
-                      Remover
+                      <Trash2 size={14} /> Remover
                     </button>
                  </div>
                ))}
@@ -292,8 +296,9 @@ export const ObligationForm: React.FC = () => {
                  className="btn btn-secondary" 
                  onClick={handlePreview} 
                  disabled={isPreviewing || form.conditions.length === 0}
+                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                >
-                 {isPreviewing ? 'Calculando...' : 'Pré-visualizar Impacto'}
+                 {isPreviewing ? 'Calculando...' : <><Eye size={18} /> Pré-visualizar Impacto</>}
                </button>
             </div>
 

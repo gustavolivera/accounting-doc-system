@@ -93,7 +93,7 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
       <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {toasts.map(toast => (
           <div key={toast.id} style={{
-            background: toast.type === 'error' ? 'var(--color-red-600)' : toast.type === 'success' ? 'var(--color-emerald-600)' : 'var(--color-gray-800)',
+            background: toast.type === 'error' ? 'var(--color-danger)' : toast.type === 'success' ? 'var(--color-success)' : 'var(--color-gray-800)',
             color: 'white',
             padding: '12px 20px',
             borderRadius: '6px',

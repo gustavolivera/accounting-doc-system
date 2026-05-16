@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUI } from '../context/UIContext';
+import { Save, X } from 'lucide-react';
 
 const TAX_REGIMES = [
   { value: 'SIMPLES_NACIONAL', label: 'Simples Nacional' },
@@ -19,6 +21,7 @@ export const CompanyForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useUI();
   const isEdit = !!id;
 
   const [form, setForm] = useState({
@@ -88,8 +91,13 @@ export const CompanyForm: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
+      showToast(isEdit ? 'Empresa atualizada com sucesso!' : 'Empresa cadastrada com sucesso!', 'success');
       navigate('/companies');
     },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Erro ao salvar os dados da empresa.';
+      showToast(Array.isArray(message) ? message[0] : message, 'error');
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -122,9 +130,11 @@ export const CompanyForm: React.FC = () => {
             <p style={{ marginBottom: 0 }}>Preencha os dados cadastrais da empresa</p>
          </div>
          <div style={{ display: 'flex', gap: '8px' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => navigate('/companies')}>Cancelar</button>
-            <button type="button" className="btn btn-primary" onClick={handleSubmit}>
-                {mutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+            <button type="button" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => navigate('/companies')}>
+              <X size={18} /> Cancelar
+            </button>
+            <button type="button" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={handleSubmit}>
+              <Save size={18} /> {mutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
             </button>
          </div>
       </div>

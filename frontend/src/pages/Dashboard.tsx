@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { Plus, FileText, CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const [year, setYear] = React.useState(new Date().getFullYear());
@@ -24,9 +25,9 @@ export const Dashboard: React.FC = () => {
           <p style={{ marginBottom: 0 }}>Bem-vindo ao sistema de gestão contábil</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-             <button className="btn btn-sm btn-secondary" onClick={() => setYear(year - 1)}>&lt;</button>
+             <button className="btn btn-sm btn-secondary" onClick={() => setYear(year - 1)}><ChevronLeft size={16} /></button>
              <span style={{ fontWeight: 600, padding: '0 1rem', minWidth: '4rem', textAlign: 'center' }}>{year}</span>
-             <button className="btn btn-sm btn-secondary" onClick={() => setYear(year + 1)}>&gt;</button>
+             <button className="btn btn-sm btn-secondary" onClick={() => setYear(year + 1)}><ChevronRight size={16} /></button>
         </div>
       </div>
 
@@ -48,8 +49,8 @@ export const Dashboard: React.FC = () => {
       <h2 style={{ marginBottom: 'var(--spacing-md)' }}>Acesso Rápido</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--spacing-lg)' }}>
         <Link to="/companies/new" className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', transition: 'transform 0.2s', cursor: 'pointer', marginBottom: 0, textDecoration: 'none' }}>
-          <div style={{ background: 'var(--color-primary-50)', color: 'var(--color-primary-600)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-            +
+          <div style={{ background: 'var(--color-primary-50)', color: 'var(--color-primary-600)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Plus size={24} />
           </div>
           <div>
             <div style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>Nova Empresa</div>
@@ -57,8 +58,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </Link>
         <Link to="/documents" className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', transition: 'transform 0.2s', cursor: 'pointer', marginBottom: 0, textDecoration: 'none' }}>
-          <div style={{ background: 'var(--color-info-bg)', color: 'var(--color-info)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-            📄
+          <div style={{ background: 'var(--color-info-bg)', color: 'var(--color-info)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <FileText size={24} />
           </div>
           <div>
             <div style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>Recebimento de Docs</div>
@@ -66,8 +67,8 @@ export const Dashboard: React.FC = () => {
           </div>
         </Link>
         <Link to="/deadlines" className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', transition: 'transform 0.2s', cursor: 'pointer', marginBottom: 0, textDecoration: 'none' }}>
-          <div style={{ background: 'var(--color-warning-bg)', color: 'var(--color-warning)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>
-            ⏰
+          <div style={{ background: 'var(--color-warning-bg)', color: 'var(--color-warning)', width: '48px', height: '48px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CalendarClock size={24} />
           </div>
           <div>
             <div style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>Prazos</div>

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useUI } from '../context/UIContext';
+import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
 
 interface User {
   id: string;
@@ -60,21 +61,24 @@ export const UsersList: React.FC = () => {
     <div className="container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1 style={{ margin: 0 }}>Usuários</h1>
-        <Link to="/users/new" className="btn btn-primary">
-          + Novo Usuário
+        <Link to="/users/new" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Plus size={18} /> Novo Usuário
         </Link>
       </div>
 
       <div style={{ marginBottom: '1rem' }}>
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem' }}>
-          <input 
-            type="text" 
-            placeholder="Buscar por e-mail..." 
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="input"
-            style={{ maxWidth: '300px' }}
-          />
+          <div style={{ position: 'relative', flex: 1, maxWidth: '300px' }}>
+            <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+            <input 
+              type="text" 
+              placeholder="Buscar por e-mail..." 
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="input"
+              style={{ paddingLeft: '35px', width: '100%' }}
+            />
+          </div>
           <button type="submit" className="btn btn-secondary">Buscar</button>
         </form>
       </div>
@@ -101,24 +105,30 @@ export const UsersList: React.FC = () => {
                 <td style={{ textAlign: 'right' }}>
                   <Link 
                     to={`/users/${user.id}/edit`} 
-                    className="btn"
+                    className="btn btn-secondary btn-sm"
                     style={{ 
                       padding: '0.25rem 0.75rem', 
                       fontSize: '0.75rem',
-                      marginRight: '0.5rem'
+                      marginRight: '0.5rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
                     }}
                   >
-                    Editar
+                    <Pencil size={14} /> Editar
                   </Link>
                   <button 
                     onClick={() => handleDelete(user.id)}
-                    className="btn btn-danger"
+                    className="btn btn-danger btn-sm"
                     style={{ 
                       padding: '0.25rem 0.75rem', 
-                      fontSize: '0.75rem' 
+                      fontSize: '0.75rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
                     }}
                   >
-                    Excluir
+                    <Trash2 size={14} /> Excluir
                   </button>
                 </td>
               </tr>

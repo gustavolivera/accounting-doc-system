@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useSearchParams } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, MousePointer2 } from 'lucide-react';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -131,9 +132,9 @@ export const DocumentControl: React.FC = () => {
               <div className="form-group">
                  <label>Ano de Referência</label>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <button className="btn btn-secondary" style={{ width: '40px' }} onClick={() => setYear(year - 1)}>&lt;</button>
+                    <button className="btn btn-secondary" style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setYear(year - 1)}><ChevronLeft size={16} /></button>
                     <input type="number" value={year} readOnly style={{ textAlign: 'center' }} />
-                    <button className="btn btn-secondary" style={{ width: '40px' }} onClick={() => setYear(year + 1)}>&gt;</button>
+                    <button className="btn btn-secondary" style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setYear(year + 1)}><ChevronRight size={16} /></button>
                  </div>
               </div>
            </div>
@@ -207,8 +208,10 @@ export const DocumentControl: React.FC = () => {
           })}
         </div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-lg)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👆</div>
+        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ marginBottom: '1rem', color: 'var(--color-gray-300)' }}>
+             <MousePointer2 size={48} />
+          </div>
           <p>Selecione uma empresa acima para visualizar e gerenciar os documentos.</p>
         </div>
       )}

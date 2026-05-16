@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useUI } from '../context/UIContext';
+import { RefreshCw, Check, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Deadline {
   id: string;
@@ -78,13 +79,14 @@ export const DeadlineDashboard: React.FC = () => {
         </div>
         <button 
            className="btn btn-primary" 
+           style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
            onClick={() => api.post('/deadlines/generate', { year: filters.year }).then(() => {
              queryClient.invalidateQueries({ queryKey: ['deadlines'] });
              showToast('Prazos gerados com sucesso!', 'success');
            })}
            title="Gera os prazos para o ano selecionado no filtro"
         >
-            Gerar para Ano {filters.year}
+            <RefreshCw size={18} /> Gerar para Ano {filters.year}
         </button>
       </div>
       
@@ -168,7 +170,7 @@ export const DeadlineDashboard: React.FC = () => {
                     {d.status !== 'ENTREGUE' ? (
                         <button 
                             className="btn btn-success btn-sm" 
-                            style={{ padding: '2px 8px', fontSize: '0.75rem', height: '24px' }}
+                            style={{ padding: '2px 8px', fontSize: '0.75rem', height: '24px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginLeft: 'auto' }}
                             onClick={() => {
                               showPrompt('Observação (opcional):', (observation) => {
                                 if (observation !== null) {
@@ -183,12 +185,12 @@ export const DeadlineDashboard: React.FC = () => {
                               });
                             }}
                         >
-                            Entregar
+                            <Check size={14} /> Entregar
                         </button>
                     ) : (
                         <button 
                             className="btn btn-secondary btn-sm"
-                            style={{ padding: '2px 8px', fontSize: '0.75rem', height: '24px' }}
+                            style={{ padding: '2px 8px', fontSize: '0.75rem', height: '24px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginLeft: 'auto' }}
                             onClick={() => {
                                 showPrompt('Motivo da reabertura:', (observation) => {
                                     if (observation) {
@@ -197,7 +199,7 @@ export const DeadlineDashboard: React.FC = () => {
                                 });
                             }}
                         >
-                            Reabrir
+                            <RotateCcw size={14} /> Reabrir
                         </button>
                     )}
                     {d.events && d.events.length > 0 && (
