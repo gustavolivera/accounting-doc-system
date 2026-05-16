@@ -38,8 +38,9 @@ export const UsersList: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       showToast('Usuário excluído com sucesso', 'success');
     },
-    onError: () => {
-      showToast('Erro ao excluir usuário', 'error');
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Erro ao excluir usuário';
+      showToast(Array.isArray(message) ? message[0] : message, 'error');
     }
   });
 

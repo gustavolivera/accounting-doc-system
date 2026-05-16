@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, MousePointer2 } from 'lucide-react';
+import { useUI } from '../context/UIContext';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -27,6 +28,7 @@ export const DocumentControl: React.FC = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>(searchParams.get('companyId') || '');
   const [year, setYear] = useState(new Date().getFullYear());
   const queryClient = useQueryClient();
+  const { showToast } = useUI();
 
   // Fetch companies for the dropdown
   const { data: companies } = useQuery<Company[]>({
@@ -53,7 +55,11 @@ export const DocumentControl: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controls', selectedCompanyId, year] });
+      showToast('Controle atualizado com sucesso', 'success');
     },
+    onError: () => {
+      showToast('Erro ao atualizar o controle mensal', 'error');
+    }
   });
 
   const getControl = (monthIndex: number) => {

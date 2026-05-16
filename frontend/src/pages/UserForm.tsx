@@ -38,8 +38,9 @@ export const UserForm: React.FC = () => {
       showToast(isEdit ? 'Usuário atualizado com sucesso' : 'Usuário criado com sucesso', 'success');
       navigate('/users');
     },
-    onError: (err: any) => {
-        showToast(err.response?.data?.message || 'Failed to save user', 'error');
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Falha ao salvar usuário';
+      showToast(Array.isArray(message) ? message[0] : message, 'error');
     }
   });
 

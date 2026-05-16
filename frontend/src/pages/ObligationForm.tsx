@@ -69,8 +69,9 @@ export const ObligationForm: React.FC = () => {
       showToast(isEdit ? 'Obrigação atualizada com sucesso' : 'Obrigação criada com sucesso', 'success');
       navigate('/obligations');
     },
-    onError: () => {
-      showToast('Erro ao salvar a obrigação', 'error');
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Erro ao salvar a obrigação';
+      showToast(Array.isArray(message) ? message[0] : message, 'error');
     }
   });
 
