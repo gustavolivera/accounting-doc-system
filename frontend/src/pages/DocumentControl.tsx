@@ -36,25 +36,22 @@ export const DocumentControl: React.FC = () => {
     queryFn: () => api.get('/companies', { params: { limit: 1000 } }).then(res => res.data?.data || []),
   });
 
-  console.log(companies);
-
   // Fetch controls when company and year are selected
   const { data: controls } = useQuery<MonthlyControl[]>({
-    queryKey: ['controls', selectedCompanyId, year],
-    queryFn: () => api.get('/monthly-controls', { params: { companyId: selectedCompanyId, year } }).then(res => res.data),
+    queryKey: ['document-controls', selectedCompanyId, year],
+    queryFn: () => api.get(`/deadlines/document-control/${selectedCompanyId}/${year}`).then(res => res.data),
     enabled: !!selectedCompanyId,
   });
 
   const mutation = useMutation({
     mutationFn: (data: { month: number; status: string; observation?: string }) => {
-      return api.post('/monthly-controls', {
-        companyId: selectedCompanyId,
-        year,
-        ...data,
+      return api.post(`/deadlines/document-control/${selectedCompanyId}/${year}/${data.month}`, {
+        status: data.status,
+        observation: data.observation,
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['controls', selectedCompanyId, year] });
+      queryClient.invalidateQueries({ queryKey: ['document-controls', selectedCompanyId, year] });
       showToast('Controle atualizado com sucesso', 'success');
     },
     onError: () => {

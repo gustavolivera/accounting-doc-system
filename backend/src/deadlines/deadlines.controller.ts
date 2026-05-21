@@ -30,10 +30,19 @@ export class DeadlinesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('companyId') companyId?: string,
+    @Query('year') year?: string,
   ) {
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 50;
-    return this.deadlinesService.findAll(pageNumber, limitNumber, search);
+    const yearNumber = year ? parseInt(year, 10) : undefined;
+    return this.deadlinesService.findAll(
+      pageNumber,
+      limitNumber,
+      search,
+      companyId,
+      yearNumber,
+    );
   }
 
   @Patch(':id/delivery-state')
@@ -53,5 +62,32 @@ export class DeadlinesController {
   async generate(@Body() dto: GenerateDeadlinesDto) {
     await this.deadlinesService.generateDeadlines(dto?.year);
     return { message: 'Geração concluída com sucesso' };
+  }
+
+  @Get('document-control/:companyId/:year')
+  async getDocumentControl(
+    @Param('companyId') companyId: string,
+    @Param('year') year: string,
+  ) {
+    return this.deadlinesService.getDocumentControlDeadlines(companyId, parseInt(year, 10));
+  }
+
+  @Post('document-control/:companyId/:year/:month')
+  async upsertDocumentControl(
+    @Param('companyId') companyId: string,
+    @Param('year') year: string,
+    @Param('month') month: string,
+    @Body() body: { status: string; observation?: string },
+    @Req() req: any,
+  ) {
+    const userId = req.user.sub;
+    return this.deadlinesService.upsertDocumentControlDeadline(
+      companyId,
+      parseInt(year, 10),
+      parseInt(month, 10),
+      body.status,
+      body.observation,
+      userId,
+    );
   }
 }

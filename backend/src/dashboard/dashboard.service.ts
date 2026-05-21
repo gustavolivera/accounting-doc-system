@@ -58,12 +58,50 @@ export class DashboardService {
       }
     }
 
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const next7DaysEnd = new Date(todayStart);
+    next7DaysEnd.setDate(next7DaysEnd.getDate() + 7);
+    next7DaysEnd.setHours(23, 59, 59, 999);
+
+    const deadlinesToday = await this.prisma.deadline.count({
+      where: {
+        dueDate: {
+          gte: todayStart,
+          lte: todayEnd,
+        },
+        status: 'PENDENTE',
+      },
+    });
+
+    const overdueDeadlines = await this.prisma.deadline.count({
+      where: {
+        status: 'ATRASADO',
+      },
+    });
+
+    const deadlinesNext7Days = await this.prisma.deadline.count({
+      where: {
+        dueDate: {
+          gt: todayEnd,
+          lte: next7DaysEnd,
+        },
+        status: 'PENDENTE',
+      },
+    });
+
     return {
       totalCompanies,
       totalObligations,
       totalDeadlines,
       pendingDeadlines,
       deliveredDeadlines,
+      deadlinesToday,
+      overdueDeadlines,
+      deadlinesNext7Days,
       monthlyBreakdown,
     };
   }

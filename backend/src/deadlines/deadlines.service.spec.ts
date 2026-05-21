@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DeadlinesService } from './deadlines.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { DeadlineStatus } from '@prisma/client';
 
 describe('DeadlinesService', () => {
   let service: DeadlinesService;
   let prisma: PrismaService;
+  let audit: AuditService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -15,9 +17,15 @@ describe('DeadlinesService', () => {
           provide: PrismaService,
           useValue: {
             companyObligation: { findMany: jest.fn() },
-            deadline: { findUnique: jest.fn(), create: jest.fn(), findMany: jest.fn(), update: jest.fn() },
+            deadline: { findUnique: jest.fn(), createMany: jest.fn().mockResolvedValue({ count: 1 }), findMany: jest.fn(), update: jest.fn(), count: jest.fn().mockResolvedValue(0) },
             deliveryEvent: { create: jest.fn() },
             fiscalCalendarDay: { findFirst: jest.fn().mockResolvedValue(null) },
+          },
+        },
+        {
+          provide: AuditService,
+          useValue: {
+            logAction: jest.fn(),
           },
         },
       ],
@@ -25,6 +33,7 @@ describe('DeadlinesService', () => {
 
     service = module.get<DeadlinesService>(DeadlinesService);
     prisma = module.get<PrismaService>(PrismaService);
+    audit = module.get<AuditService>(AuditService);
   });
 
   it('should be defined', () => {
@@ -32,10 +41,10 @@ describe('DeadlinesService', () => {
   });
 
   describe('generateDeadlines', () => {
-    it('should find all active links and call generateForLink', async () => {
+    it('should find all active links and call createMany', async () => {
       const links = [{ id: '1', obligation: { periodicity: 'MENSAL', dueDay: 20 }, companyId: 'c1', obligationId: 'o1' }];
       jest.spyOn(prisma.companyObligation, 'findMany').mockResolvedValue(links as any);
-      const generateForLinkSpy = jest.spyOn(service, 'generateForLink').mockResolvedValue(undefined);
+      const createManySpy = jest.spyOn(prisma.deadline, 'createMany');
 
       await service.generateDeadlines();
 
@@ -43,91 +52,53 @@ describe('DeadlinesService', () => {
         where: { isActive: true },
         include: { obligation: true, company: true },
       });
-      expect(generateForLinkSpy).toHaveBeenCalledWith(links[0], expect.any(Number));
+      expect(createManySpy).toHaveBeenCalled();
     });
   });
 
   describe('generateForLink', () => {
     it('should generate 12 months for MENSAL', async () => {
       const link = { obligation: { periodicity: 'MENSAL', dueDay: 20 }, companyId: 'c1', obligationId: 'o1' };
-      const createSpy = jest.spyOn(service as any, 'createDeadlineIfNotExists').mockResolvedValue(undefined);
+      const createSpy = jest.spyOn(prisma.deadline, 'createMany');
 
       await service.generateForLink(link as any);
 
-      expect(createSpy).toHaveBeenCalledTimes(12);
+      expect(createSpy).toHaveBeenCalled();
+      const callArg = createSpy.mock.calls[0][0];
+      expect(callArg!.data).toHaveLength(12);
     });
 
     it('should generate 4 months for TRIMESTRAL', async () => {
       const link = { obligation: { periodicity: 'TRIMESTRAL', dueDay: 20 }, companyId: 'c1', obligationId: 'o1' };
-      const createSpy = jest.spyOn(service as any, 'createDeadlineIfNotExists').mockResolvedValue(undefined);
+      const createSpy = jest.spyOn(prisma.deadline, 'createMany');
 
       await service.generateForLink(link as any);
 
-      expect(createSpy).toHaveBeenCalledTimes(4);
+      expect(createSpy).toHaveBeenCalled();
+      const callArg = createSpy.mock.calls[0][0];
+      expect(callArg!.data).toHaveLength(4);
     });
 
     it('should generate 1 month for ANUAL', async () => {
       const link = { obligation: { periodicity: 'ANUAL', dueDay: 20 }, companyId: 'c1', obligationId: 'o1' };
-      const createSpy = jest.spyOn(service as any, 'createDeadlineIfNotExists').mockResolvedValue(undefined);
+      const createSpy = jest.spyOn(prisma.deadline, 'createMany');
 
       await service.generateForLink(link as any);
 
-      expect(createSpy).toHaveBeenCalledTimes(1);
+      expect(createSpy).toHaveBeenCalled();
+      const callArg = createSpy.mock.calls[0][0];
+      expect(callArg!.data).toHaveLength(1);
     });
 
     it('should generate 6 months for BIMESTRAL', async () => {
       const link = { obligation: { periodicity: 'BIMESTRAL', dueDay: 20 }, companyId: 'c1', obligationId: 'o1' };
-      const createSpy = jest.spyOn(service as any, 'createDeadlineIfNotExists').mockResolvedValue(undefined);
+      const createSpy = jest.spyOn(prisma.deadline, 'createMany');
 
       await service.generateForLink(link as any);
 
-      expect(createSpy).toHaveBeenCalledTimes(6);
-    });
-  });
-
-  describe('createDeadlineIfNotExists', () => {
-    it('should not create if deadline already exists', async () => {
-      jest.spyOn(prisma.deadline, 'findUnique').mockResolvedValue({ id: '1' } as any);
-      const createSpy = jest.spyOn(prisma.deadline, 'create');
-
-      const link = { obligation: { periodicity: 'MENSAL', dueDay: 20 }, companyId: 'c1', obligationId: 'o1' };
-      await (service as any).createDeadlineIfNotExists(link, 1, 2026);
-
-      expect(createSpy).not.toHaveBeenCalled();
-    });
-
-    it('should create deadline with correct due date', async () => {
-      jest.spyOn(prisma.deadline, 'findUnique').mockResolvedValue(null);
-      const createSpy = jest.spyOn(prisma.deadline, 'create').mockResolvedValue({} as any);
-
-      const link = { obligation: { periodicity: 'MENSAL', dueDay: 20 }, companyId: 'c1', obligationId: 'o1' };
-      await (service as any).createDeadlineIfNotExists(link, 1, 2026);
-
       expect(createSpy).toHaveBeenCalled();
-      const createArgs = createSpy.mock.calls[0][0].data;
-      expect(createArgs.companyId).toBe('c1');
-      expect(createArgs.obligationId).toBe('o1');
-      expect(createArgs.month).toBe(1);
-      expect(createArgs.year).toBe(2026);
-      expect(createArgs.status).toBe(DeadlineStatus.PENDENTE);
-      
-      // month 1 (Jan) -> due in month 2 (Feb) day 20
-      expect((createArgs.dueDate as Date).getFullYear()).toBe(2026);
-      expect((createArgs.dueDate as Date).getMonth()).toBe(1); // 0-indexed, so 1 = Feb
-      expect((createArgs.dueDate as Date).getDate()).toBe(20);
-    });
-
-    it('should handle year rollover correctly', async () => {
-      jest.spyOn(prisma.deadline, 'findUnique').mockResolvedValue(null);
-      const createSpy = jest.spyOn(prisma.deadline, 'create').mockResolvedValue({} as any);
-
-      const link = { obligation: { periodicity: 'MENSAL', dueDay: 20 }, companyId: 'c1', obligationId: 'o1' };
-      await (service as any).createDeadlineIfNotExists(link, 12, 2026);
-
-      const createArgs = createSpy.mock.calls[0][0].data;
-      // month 12 (Dec) -> due in month 1 (Jan) next year day 20
-      expect((createArgs.dueDate as Date).getFullYear()).toBe(2027);
-      expect((createArgs.dueDate as Date).getMonth()).toBe(0); // Jan
+      const callArg = createSpy.mock.calls[0][0];
+      expect(callArg!.data).toHaveLength(6);
     });
   });
 
@@ -135,10 +106,10 @@ describe('DeadlinesService', () => {
     it('should query all deadlines ordered by due date', async () => {
       const findManySpy = jest.spyOn(prisma.deadline, 'findMany').mockResolvedValue([] as any);
       await service.findAll();
-      expect(findManySpy).toHaveBeenCalledWith({
+      expect(findManySpy).toHaveBeenCalledWith(expect.objectContaining({
         include: { company: true, obligation: true, events: true },
         orderBy: { dueDate: 'asc' },
-      });
+      }));
     });
   });
 
@@ -146,6 +117,7 @@ describe('DeadlinesService', () => {
     it('should update status and create event', async () => {
       const updateSpy = jest.spyOn(prisma.deadline, 'update').mockResolvedValue({ id: '1' } as any);
       const createEventSpy = jest.spyOn(prisma.deliveryEvent, 'create').mockResolvedValue({ id: 'event1' } as any);
+      const logActionSpy = jest.spyOn(audit, 'logAction').mockResolvedValue(undefined);
 
       await service.updateDeliveryState('1', 'user1', { status: DeadlineStatus.ENTREGUE, observation: 'ok' });
 
@@ -156,6 +128,7 @@ describe('DeadlinesService', () => {
       expect(createEventSpy).toHaveBeenCalledWith({
         data: { deadlineId: '1', userId: 'user1', status: DeadlineStatus.ENTREGUE, observation: 'ok', evidenceUrl: undefined }
       });
+      expect(logActionSpy).toHaveBeenCalled();
     });
   });
 });

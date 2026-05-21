@@ -25,6 +25,7 @@ describe('RuleEngineService', () => {
           provide: DeadlinesService,
           useValue: {
             generateForLink: jest.fn(),
+            cancelFutureDeadlines: jest.fn(),
           },
         },
       ],

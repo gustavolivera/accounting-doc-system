@@ -5,6 +5,7 @@ import {
   DeadlineStatus,
   CompanyObligation,
   Obligation,
+  DeadlineType,
 } from '@prisma/client';
 import { addMonths, setDate, isWeekend, addDays } from 'date-fns'; // Assuming date-fns might be available or I'll use native JS Date if not. Project dependency check required?
 // If date-fns not installed, I'll use native Date. checking package.json in previous list_dir could have helper.
@@ -33,8 +34,20 @@ export class DeadlinesService {
       include: { obligation: true, company: true },
     });
 
+    const deadlineData = [];
     for (const link of links) {
-      await this.generateForLink(link, targetYear);
+      const linkData = await this.prepareDeadlineDataForLink(link, targetYear);
+      deadlineData.push(...linkData);
+    }
+
+    if (deadlineData.length > 0) {
+      const result = await this.prisma.deadline.createMany({
+        data: deadlineData,
+        skipDuplicates: true,
+      });
+      this.logger.log(
+        `Generated ${result.count} deadlines in bulk for year ${targetYear}`,
+      );
     }
   }
 
@@ -47,6 +60,26 @@ export class DeadlinesService {
     targetYear?: number,
   ) {
     const currentYear = targetYear || new Date().getFullYear();
+    const deadlineData = await this.prepareDeadlineDataForLink(
+      link,
+      currentYear,
+    );
+
+    if (deadlineData.length > 0) {
+      const result = await this.prisma.deadline.createMany({
+        data: deadlineData,
+        skipDuplicates: true,
+      });
+      this.logger.log(
+        `Generated ${result.count} deadlines for Company ${link.companyId} and Obligation ${link.obligationId}`,
+      );
+    }
+  }
+
+  private async prepareDeadlineDataForLink(
+    link: CompanyObligation & { obligation: Obligation },
+    targetYear: number,
+  ) {
     const periodicity = link.obligation.periodicity;
 
     // Determine months to generate based on periodicity
@@ -61,9 +94,28 @@ export class DeadlinesService {
       months = [2, 4, 6, 8, 10, 12];
     }
 
+    const data = [];
     for (const month of months) {
-      await this.createDeadlineIfNotExists(link, month, currentYear);
+      let dueYear = targetYear;
+      let dueMonth = month + 1;
+      if (dueMonth > 12) {
+        dueMonth = 1;
+        dueYear = targetYear + 1;
+      }
+
+      let dueDate = new Date(dueYear, dueMonth - 1, link.obligation.dueDay);
+      dueDate = await this.adjustForWeekendsAndHolidays(dueDate);
+
+      data.push({
+        companyId: link.companyId,
+        obligationId: link.obligationId,
+        month,
+        year: targetYear,
+        dueDate,
+        status: DeadlineStatus.PENDENTE,
+      });
     }
+    return data;
   }
 
   private async adjustForWeekendsAndHolidays(date: Date): Promise<Date> {
@@ -118,54 +170,13 @@ export class DeadlinesService {
     return adjustedDate;
   }
 
-  private async createDeadlineIfNotExists(
-    link: CompanyObligation & { obligation: Obligation },
-    month: number,
-    year: number,
+  async findAll(
+    page: number = 1,
+    limit: number = 50,
+    search?: string,
+    companyId?: string,
+    year?: number,
   ) {
-    const exists = await this.prisma.deadline.findUnique({
-      where: {
-        companyId_obligationId_month_year: {
-          companyId: link.companyId,
-          obligationId: link.obligationId,
-          month,
-          year,
-        },
-      },
-    });
-
-    if (exists) return;
-
-    let dueYear = year;
-    let dueMonth = month + 1;
-    if (dueMonth > 12) {
-      dueMonth = 1;
-      dueYear = year + 1;
-    }
-
-    let dueDate = new Date(dueYear, dueMonth - 1, link.obligation.dueDay);
-
-    // Adjust for weekends and holidays
-    dueDate = await this.adjustForWeekendsAndHolidays(dueDate);
-
-    const status = DeadlineStatus.PENDENTE;
-
-    await this.prisma.deadline.create({
-      data: {
-        companyId: link.companyId,
-        obligationId: link.obligationId,
-        month,
-        year,
-        dueDate,
-        status,
-      },
-    });
-    this.logger.log(
-      `Created Deadline for ${link.companyId} ${link.obligation.name} ${month}/${year}`,
-    );
-  }
-
-  async findAll(page: number = 1, limit: number = 50, search?: string) {
     const skip = (page - 1) * limit;
     const where: any = {};
 
@@ -173,6 +184,12 @@ export class DeadlinesService {
       where.company = {
         tradeName: { contains: search, mode: 'insensitive' },
       };
+    }
+    if (companyId) {
+      where.companyId = companyId;
+    }
+    if (year) {
+      where.year = year;
     }
 
     const [data, total] = await Promise.all([
@@ -222,6 +239,157 @@ export class DeadlinesService {
     await this.auditService.logAction(userId, 'UPDATE_STATUS', 'DEADLINE', id, {
       status: data.status,
     });
+
+    return deadline;
+  }
+
+  async cancelFutureDeadlines(companyId: string, obligationId: string) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const result = await this.prisma.deadline.deleteMany({
+      where: {
+        companyId,
+        obligationId,
+        status: 'PENDENTE',
+        dueDate: {
+          gt: today,
+        },
+      },
+    });
+    this.logger.log(
+      `Cancelled ${result.count} future pending deadlines for Company ${companyId} and Obligation ${obligationId}`,
+    );
+  }
+
+  private async getGenericObligation() {
+    let obligation = await this.prisma.obligation.findFirst({
+      where: { name: 'Controle Mensal de Documentos' },
+    });
+    if (!obligation) {
+      obligation = await this.prisma.obligation.create({
+        data: {
+          name: 'Controle Mensal de Documentos',
+          description: 'Controle genérico de recebimento de documentos mensais.',
+          type: DeadlineType.OPERACIONAL,
+          periodicity: 'MENSAL',
+          dueDay: 15,
+          isActive: true,
+        },
+      });
+    }
+    return obligation;
+  }
+
+  async getDocumentControlDeadlines(companyId: string, year: number) {
+    const obligation = await this.getGenericObligation();
+    const deadlines = await this.prisma.deadline.findMany({
+      where: { companyId, obligationId: obligation.id, year },
+      include: { events: { orderBy: { createdAt: 'desc' }, take: 1 } },
+    });
+
+    const result = [];
+    for (let month = 1; month <= 12; month++) {
+      const d = deadlines.find((x) => x.month === month);
+      let status = 'PENDING';
+      let observation = '';
+      if (d) {
+        if (d.status === 'ENTREGUE') {
+          const obs = d.events?.[0]?.observation || '';
+          if (obs.startsWith('[Sem Movimento]')) {
+            status = 'NO_DOCUMENTS';
+            observation = obs.replace('[Sem Movimento] ', '').replace('[Sem Movimento]', '');
+          } else {
+            status = 'DELIVERED';
+            observation = obs;
+          }
+        } else {
+          status = 'PENDING';
+          observation = d.events?.[0]?.observation || '';
+        }
+      }
+
+      result.push({
+        month,
+        year,
+        status,
+        observation,
+      });
+    }
+    return result;
+  }
+
+  async upsertDocumentControlDeadline(
+    companyId: string,
+    year: number,
+    month: number,
+    status: string,
+    observation?: string,
+    userId?: string,
+  ) {
+    const obligation = await this.getGenericObligation();
+
+    let link = await this.prisma.companyObligation.findUnique({
+      where: {
+        companyId_obligationId: { companyId, obligationId: obligation.id },
+      },
+    });
+    if (!link) {
+      link = await this.prisma.companyObligation.create({
+        data: { companyId, obligationId: obligation.id },
+      });
+    }
+
+    let deadlineStatus: DeadlineStatus = DeadlineStatus.PENDENTE;
+    let actualObservation = observation || '';
+    if (status === 'NO_DOCUMENTS') {
+      deadlineStatus = DeadlineStatus.ENTREGUE;
+      actualObservation = '[Sem Movimento] ' + (observation || '');
+    } else if (status === 'DELIVERED') {
+      deadlineStatus = DeadlineStatus.ENTREGUE;
+    }
+
+    let deadline = await this.prisma.deadline.findUnique({
+      where: {
+        companyId_obligationId_month_year: {
+          companyId,
+          obligationId: obligation.id,
+          month,
+          year,
+        },
+      },
+    });
+
+    if (deadline) {
+      deadline = await this.prisma.deadline.update({
+        where: { id: deadline.id },
+        data: { status: deadlineStatus },
+      });
+    } else {
+      let dueDate = new Date(year, month, obligation.dueDay); // Month is 1-based in our loop but JS Date is 0-based. Wait, month=1 (Jan), new Date(year, 1) = Feb. We want dueDate in next month! This is correct.
+      dueDate = await this.adjustForWeekendsAndHolidays(dueDate);
+      deadline = await this.prisma.deadline.create({
+        data: {
+          companyId,
+          obligationId: obligation.id,
+          month,
+          year,
+          dueDate,
+          status: deadlineStatus,
+        },
+      });
+    }
+
+    if (userId) {
+      await this.prisma.deliveryEvent.create({
+        data: {
+          deadlineId: deadline.id,
+          userId,
+          status: deadlineStatus,
+          observation: actualObservation,
+        },
+      });
+    }
 
     return deadline;
   }

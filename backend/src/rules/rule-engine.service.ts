@@ -122,7 +122,7 @@ export class RuleEngineService {
 
     const affectedCompanies = [];
     for (const company of companies) {
-      if (this.checkTypedCriteria(company as any, internalCriteria)) {
+      if (this.checkTypedCriteria(company, internalCriteria)) {
         affectedCompanies.push({
           id: company.id,
           tradeName: company.tradeName,
@@ -137,12 +137,42 @@ export class RuleEngineService {
     };
   }
 
+  private getCompanyField(company: Company, field: string): any {
+    const safeFields: (keyof Company)[] = [
+      'taxRegime',
+      'activities',
+      'city',
+      'stateRegistration',
+      'hasMovement',
+      'hasOutboundDocs',
+      'hasInboundDocs',
+      'hasServiceDocs',
+      'taxSimplesNacional',
+      'taxIss',
+      'taxIcms',
+      'taxPis',
+      'taxCofins',
+      'taxIrpj',
+      'taxCsll',
+      'obFima',
+      'obSintegra',
+      'obSpedIcms',
+      'obEfdContribuicoes',
+      'obDctfWeb',
+    ];
+
+    if (safeFields.includes(field as keyof Company)) {
+      return company[field as keyof Company];
+    }
+    return undefined;
+  }
+
   private checkTypedCriteria(company: Company, criteria: any[]): boolean {
     if (!criteria || criteria.length === 0) return false;
 
     for (const ruleCriterion of criteria) {
       const criterion = ruleCriterion.criterion;
-      const companyValue = (company as any)[criterion.code];
+      const companyValue = this.getCompanyField(company, criterion.code);
 
       if (companyValue === undefined) return false;
 
@@ -166,7 +196,7 @@ export class RuleEngineService {
     if (!conditions || conditions.length === 0) return false;
 
     for (const condition of conditions) {
-      const companyValue = (company as any)[condition.field];
+      const companyValue = this.getCompanyField(company, condition.field);
 
       if (companyValue === undefined) return false;
 
@@ -253,7 +283,11 @@ export class RuleEngineService {
         `Unlinked Company ${companyId} from Obligation ${obligationId}`,
       );
 
-      // Cancellations of pending deadlines could be implemented here
+      // Cancellations of pending deadlines
+      await this.deadlinesService.cancelFutureDeadlines(
+        companyId,
+        obligationId,
+      );
     }
   }
 }

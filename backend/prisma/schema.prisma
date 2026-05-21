@@ -45,6 +45,7 @@ enum DeadlineType {
   FEDERAL
   ESTADUAL
   MUNICIPAL
+  OPERACIONAL
 }
 
 enum Periodicity {

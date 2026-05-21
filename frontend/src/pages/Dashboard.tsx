@@ -33,16 +33,16 @@ export const Dashboard: React.FC = () => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-xl)' }}>
          <div className="card" style={{ marginBottom: 0 }}>
-           <h3 style={{ marginTop: 0 }}>Empresas Ativas</h3>
-           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-primary-600)', marginBottom: 0 }}>{metrics?.totalCompanies || 0}</p>
+           <h3 style={{ marginTop: 0 }}>Prazos de Hoje</h3>
+           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-primary-600)', marginBottom: 0 }}>{metrics?.deadlinesToday ?? 0}</p>
          </div>
          <div className="card" style={{ marginBottom: 0 }}>
-           <h3 style={{ marginTop: 0 }}>Pendências ({year})</h3>
-           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-danger)', marginBottom: 0 }}>{metrics?.pendingDeadlines ?? 0}</p>
+           <h3 style={{ marginTop: 0 }}>Prazos Vencidos</h3>
+           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-danger)', marginBottom: 0 }}>{metrics?.overdueDeadlines ?? 0}</p>
          </div>
          <div className="card" style={{ marginBottom: 0 }}>
-           <h3 style={{ marginTop: 0 }}>Obrigações Entregues</h3>
-           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-success)', marginBottom: 0 }}>{metrics?.deliveredDeadlines ?? 0}</p>
+           <h3 style={{ marginTop: 0 }}>Próximos 7 Dias</h3>
+           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-warning)', marginBottom: 0 }}>{metrics?.deadlinesNext7Days ?? 0}</p>
          </div>
       </div>
 
