@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../services/api';
 import { useUI } from '../context/UIContext';
-import { RefreshCw, Check, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RefreshCw, Check, RotateCcw } from 'lucide-react';
 
 interface Deadline {
   id: string;

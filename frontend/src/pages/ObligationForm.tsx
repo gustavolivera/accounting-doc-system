@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUI } from '../context/UIContext';
-import { Eye, Save, Trash2, X, Plus } from 'lucide-react';
+import { Eye, Save, Trash2, X } from 'lucide-react';
 
 const TYPES = ['FEDERAL', 'ESTADUAL', 'MUNICIPAL'];
 const PERIODICITIES = ['MENSAL', 'BIMESTRAL', 'TRIMESTRAL', 'ANUAL'];

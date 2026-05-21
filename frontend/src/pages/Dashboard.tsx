@@ -7,11 +7,6 @@ import { Plus, FileText, CalendarClock, ChevronLeft, ChevronRight } from 'lucide
 export const Dashboard: React.FC = () => {
   const [year, setYear] = React.useState(new Date().getFullYear());
 
-  const { data: companies } = useQuery({
-    queryKey: ['companies-stats'],
-    queryFn: () => api.get('/companies').then(res => res.data),
-  });
-
   const { data: metrics } = useQuery({
     queryKey: ['dashboard-metrics', year],
     queryFn: () => api.get('/dashboard/metrics', { params: { year } }).then(res => res.data),
@@ -25,25 +20,25 @@ export const Dashboard: React.FC = () => {
           <p style={{ marginBottom: 0 }}>Bem-vindo ao sistema de gestão contábil</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-             <button className="btn btn-sm btn-secondary" onClick={() => setYear(year - 1)}><ChevronLeft size={16} /></button>
-             <span style={{ fontWeight: 600, padding: '0 1rem', minWidth: '4rem', textAlign: 'center' }}>{year}</span>
-             <button className="btn btn-sm btn-secondary" onClick={() => setYear(year + 1)}><ChevronRight size={16} /></button>
+          <button className="btn btn-sm btn-secondary" onClick={() => setYear(year - 1)}><ChevronLeft size={16} /></button>
+          <span style={{ fontWeight: 600, padding: '0 1rem', minWidth: '4rem', textAlign: 'center' }}>{year}</span>
+          <button className="btn btn-sm btn-secondary" onClick={() => setYear(year + 1)}><ChevronRight size={16} /></button>
         </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--spacing-lg)', marginBottom: 'var(--spacing-xl)' }}>
-         <div className="card" style={{ marginBottom: 0 }}>
-           <h3 style={{ marginTop: 0 }}>Prazos de Hoje</h3>
-           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-primary-600)', marginBottom: 0 }}>{metrics?.deadlinesToday ?? 0}</p>
-         </div>
-         <div className="card" style={{ marginBottom: 0 }}>
-           <h3 style={{ marginTop: 0 }}>Prazos Vencidos</h3>
-           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-danger)', marginBottom: 0 }}>{metrics?.overdueDeadlines ?? 0}</p>
-         </div>
-         <div className="card" style={{ marginBottom: 0 }}>
-           <h3 style={{ marginTop: 0 }}>Próximos 7 Dias</h3>
-           <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-warning)', marginBottom: 0 }}>{metrics?.deadlinesNext7Days ?? 0}</p>
-         </div>
+        <div className="card" style={{ marginBottom: 0 }}>
+          <h3 style={{ marginTop: 0 }}>Prazos de Hoje</h3>
+          <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-primary-600)', marginBottom: 0 }}>{metrics?.deadlinesToday ?? 0}</p>
+        </div>
+        <div className="card" style={{ marginBottom: 0 }}>
+          <h3 style={{ marginTop: 0 }}>Prazos Vencidos</h3>
+          <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-danger)', marginBottom: 0 }}>{metrics?.overdueDeadlines ?? 0}</p>
+        </div>
+        <div className="card" style={{ marginBottom: 0 }}>
+          <h3 style={{ marginTop: 0 }}>Próximos 7 Dias</h3>
+          <p style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--color-warning)', marginBottom: 0 }}>{metrics?.deadlinesNext7Days ?? 0}</p>
+        </div>
       </div>
 
       <h2 style={{ marginBottom: 'var(--spacing-md)' }}>Acesso Rápido</h2>
