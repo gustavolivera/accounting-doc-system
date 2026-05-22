@@ -34,10 +34,14 @@ async function main() {
       city: 'São Paulo - SP',
       taxRegime: 'SIMPLES_NACIONAL',
       activities: ['SERVICO', 'COMERCIO'],
-      hasMovement: true,
-      hasOutboundDocs: true,
-      hasInboundDocs: true,
-      taxSimplesNacional: true,
+      fiscalParameters: {
+        create: [
+          { code: 'hasMovement', value: 'true' },
+          { code: 'hasOutboundDocs', value: 'true' },
+          { code: 'hasInboundDocs', value: 'true' },
+          { code: 'taxSimplesNacional', value: 'true' },
+        ],
+      },
     },
   });
 

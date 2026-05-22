@@ -59,6 +59,7 @@ enum DeadlineStatus {
   PENDENTE
   ENTREGUE
   ATRASADO
+  CANCELADO
 }
 
 enum ConditionOperator {
@@ -83,38 +84,25 @@ model Company {
   // Activities 
   activities  ActivityType[] 
 
-  // Movement Booleans
-  hasMovement     Boolean @default(false)
-  hasOutboundDocs Boolean @default(false) // "notas de saída"
-  hasInboundDocs  Boolean @default(false) // "notas de entrada"
-  hasServiceDocs  Boolean @default(false) // "notas de serviço"
-
-  // Tax Booleans
-  taxSimplesNacional Boolean @default(false)
-  taxIss             Boolean @default(false)
-  taxIcms            Boolean @default(false)
-  taxPis             Boolean @default(false)
-  taxCofins          Boolean @default(false)
-  taxIrpj            Boolean @default(false)
-  taxCsll            Boolean @default(false)
-
-  // Obligation Booleans 
-  obFima              Boolean @default(false)
-  obSintegra          Boolean @default(false)
-  obSpedIcms          Boolean @default(false)
-  obEfdContribuicoes  Boolean @default(false)
-  obDctfWeb           Boolean @default(false)
-
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // Existing relation
-  controls MonthlyControl[]
   
   // New Relations
   obligations CompanyObligation[]
   deadlines   Deadline[]
+  fiscalParameters CompanyFiscalParameter[]
+}
+
+model CompanyFiscalParameter {
+  id        String  @id @default(uuid())
+  companyId String
+  code      String  // e.g., "HAS_MOVEMENT", "TAX_ISS"
+  value     String  // e.g., "true", "false"
+  
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([companyId, code])
 }
 
 model Obligation {
@@ -263,24 +251,4 @@ model AuditEvent {
   user        User?    @relation(fields: [userId], references: [id])
 }
 
-// Keeping existing MonthlyControl to avoid breaking legacy code immediately, 
-// though it seems redundant with Deadline.
-enum DocumentStatus {
-  PENDING
-  DELIVERED
-  NO_DOCUMENTS
-}
-
-model MonthlyControl {
-  id          String         @id @default(uuid())
-  companyId   String
-  month       Int
-  year        Int
-  status      DocumentStatus @default(PENDING)
-  observation String?
-  updatedAt   DateTime       @updatedAt
-
-  company Company @relation(fields: [companyId], references: [id])
-
-  @@unique([companyId, month, year])
-}
+// Legacy MonthlyControl was removed.

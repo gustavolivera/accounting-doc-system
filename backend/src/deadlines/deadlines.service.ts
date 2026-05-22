@@ -178,7 +178,9 @@ export class DeadlinesService {
     year?: number,
   ) {
     const skip = (page - 1) * limit;
-    const where: any = {};
+    const where: any = {
+      status: { not: 'CANCELADO' }
+    };
 
     if (search) {
       where.company = {
@@ -247,7 +249,7 @@ export class DeadlinesService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const result = await this.prisma.deadline.deleteMany({
+    const deadlinesToCancel = await this.prisma.deadline.findMany({
       where: {
         companyId,
         obligationId,
@@ -257,8 +259,43 @@ export class DeadlinesService {
         },
       },
     });
+
+    if (deadlinesToCancel.length === 0) return;
+
+    // Use transaction to ensure both status update and events creation are atomic
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Update status to CANCELADO
+      await tx.deadline.updateMany({
+        where: {
+          id: { in: deadlinesToCancel.map(d => d.id) }
+        },
+        data: {
+          status: 'CANCELADO'
+        }
+      });
+
+      // 2. Tentar buscar um usuario admin (system/fallback) caso não passe userId no unbind
+      const admin = await tx.user.findFirst({
+        where: { role: 'ADMIN', isActive: true }
+      });
+
+      // 3. Create DeliveryEvents
+      if (admin) {
+        const eventsData = deadlinesToCancel.map(d => ({
+          deadlineId: d.id,
+          userId: admin.id,
+          status: DeadlineStatus.CANCELADO,
+          observation: 'Cancelado automaticamente pelo sistema devido à desvinculação da obrigação',
+        }));
+
+        await tx.deliveryEvent.createMany({
+          data: eventsData
+        });
+      }
+    });
+
     this.logger.log(
-      `Cancelled ${result.count} future pending deadlines for Company ${companyId} and Obligation ${obligationId}`,
+      `Cancelled ${deadlinesToCancel.length} future pending deadlines for Company ${companyId} and Obligation ${obligationId}`,
     );
   }
 

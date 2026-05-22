@@ -73,86 +73,10 @@ export class CreateCompanyDto {
   @IsOptional()
   activities?: ActivityType[];
 
-  // Movement Booleans
-  @ApiProperty({ default: false })
-  @IsBoolean()
+  @ApiPropertyOptional({
+    description: 'Fiscal Parameters key-value pairs',
+    example: { hasMovement: 'true', taxIss: 'false' },
+  })
   @IsOptional()
-  hasMovement?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  hasOutboundDocs?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  hasInboundDocs?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  hasServiceDocs?: boolean;
-
-  // Tax Booleans
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxSimplesNacional?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxIss?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxIcms?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxPis?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxCofins?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxIrpj?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxCsll?: boolean;
-
-  // Obligation Booleans
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obFima?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obSintegra?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obSpedIcms?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obEfdContribuicoes?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obDctfWeb?: boolean;
+  fiscalParameters?: Record<string, string>;
 }

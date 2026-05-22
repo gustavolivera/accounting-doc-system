@@ -35,8 +35,18 @@ export class CompaniesService {
       }
     }
 
+    const { fiscalParameters, ...companyData } = createCompanyDto;
+
     const company = await this.prisma.company.create({
-      data: createCompanyDto,
+      data: {
+        ...companyData,
+        fiscalParameters: fiscalParameters ? {
+          create: Object.entries(fiscalParameters).map(([code, value]) => ({
+            code,
+            value: String(value)
+          }))
+        } : undefined
+      },
     });
     await this.ruleEngine.evaluateForCompany(company.id);
     return company;
@@ -59,6 +69,7 @@ export class CompaniesService {
         skip,
         take: limit,
         orderBy: { tradeName: 'asc' },
+        include: { fiscalParameters: true },
       }),
       this.prisma.company.count({ where }),
     ]);
@@ -73,17 +84,51 @@ export class CompaniesService {
   }
 
   async findOne(id: string) {
-    const company = await this.prisma.company.findUnique({ where: { id } });
+    const company = await this.prisma.company.findUnique({
+      where: { id },
+      include: { fiscalParameters: true },
+    });
     if (!company) throw new NotFoundException('Company not found');
     return company;
   }
 
   async update(id: string, updateCompanyDto: UpdateCompanyDto) {
     await this.findOne(id);
-    const company = await this.prisma.company.update({
-      where: { id },
-      data: updateCompanyDto,
-    });
+    
+    const { fiscalParameters, ...companyData } = updateCompanyDto;
+
+    // Use transaction if we have fiscal parameters to update
+    let company;
+    if (fiscalParameters !== undefined) {
+      company = await this.prisma.$transaction(async (tx) => {
+        // Delete old parameters
+        await tx.companyFiscalParameter.deleteMany({
+          where: { companyId: id }
+        });
+        
+        // Update company and create new parameters
+        return tx.company.update({
+          where: { id },
+          data: {
+            ...companyData,
+            fiscalParameters: {
+              create: Object.entries(fiscalParameters).map(([code, value]) => ({
+                code,
+                value: String(value)
+              }))
+            }
+          },
+          include: { fiscalParameters: true }
+        });
+      });
+    } else {
+      company = await this.prisma.company.update({
+        where: { id },
+        data: companyData,
+        include: { fiscalParameters: true }
+      });
+    }
+
     await this.ruleEngine.evaluateForCompany(company.id);
     return company;
   }

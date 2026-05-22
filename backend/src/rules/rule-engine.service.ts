@@ -5,7 +5,13 @@ import {
   Obligation,
   ObligationCondition,
   ConditionOperator,
+  CompanyFiscalParameter,
 } from '@prisma/client';
+
+type CompanyWithParameters = Company & {
+  fiscalParameters?: CompanyFiscalParameter[];
+};
+
 import { DeadlinesService } from '../deadlines/deadlines.service';
 
 @Injectable()
@@ -24,6 +30,7 @@ export class RuleEngineService {
   async evaluateForCompany(companyId: string) {
     const company = await this.prisma.company.findUnique({
       where: { id: companyId },
+      include: { fiscalParameters: true }
     });
     if (!company) return;
 
@@ -79,6 +86,7 @@ export class RuleEngineService {
     // Fetch all active companies
     const companies = await this.prisma.company.findMany({
       where: { isActive: true },
+      include: { fiscalParameters: true }
     });
 
     const activeVersion = obligation.ruleVersions?.[0];
@@ -118,6 +126,7 @@ export class RuleEngineService {
 
     const companies = await this.prisma.company.findMany({
       where: { isActive: true },
+      include: { fiscalParameters: true }
     });
 
     const affectedCompanies = [];
@@ -137,33 +146,29 @@ export class RuleEngineService {
     };
   }
 
-  private getCompanyField(company: Company, field: string): any {
+  private getCompanyField(company: CompanyWithParameters, field: string): unknown {
     const safeFields: (keyof Company)[] = [
       'taxRegime',
       'activities',
       'city',
-      'stateRegistration',
-      'hasMovement',
-      'hasOutboundDocs',
-      'hasInboundDocs',
-      'hasServiceDocs',
-      'taxSimplesNacional',
-      'taxIss',
-      'taxIcms',
-      'taxPis',
-      'taxCofins',
-      'taxIrpj',
-      'taxCsll',
-      'obFima',
-      'obSintegra',
-      'obSpedIcms',
-      'obEfdContribuicoes',
-      'obDctfWeb',
+      'stateRegistration'
     ];
 
     if (safeFields.includes(field as keyof Company)) {
       return company[field as keyof Company];
     }
+    
+    // Check if it's a fiscal parameter
+    if (company.fiscalParameters && Array.isArray(company.fiscalParameters)) {
+      const param = company.fiscalParameters.find((p: CompanyFiscalParameter) => p.code === field);
+      if (param) {
+        // Convert 'true'/'false' strings to boolean if necessary
+        if (param.value === 'true') return true;
+        if (param.value === 'false') return false;
+        return param.value;
+      }
+    }
+
     return undefined;
   }
 

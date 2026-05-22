@@ -5,7 +5,6 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { CompaniesModule } from './companies/companies.module';
-import { MonthlyControlsModule } from './monthly-controls/monthly-controls.module';
 import { UsersModule } from './users/users.module';
 import { RulesModule } from './rules/rules.module';
 import { ObligationsModule } from './obligations/obligations.module';
@@ -25,7 +24,6 @@ import { ScheduleModule } from '@nestjs/schedule';
     CompaniesModule,
     ObligationsModule,
     DeadlinesModule,
-    MonthlyControlsModule,
     UsersModule,
     DashboardModule,
     AuditModule,

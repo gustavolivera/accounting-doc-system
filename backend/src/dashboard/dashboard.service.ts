@@ -17,7 +17,10 @@ export class DashboardService {
     const deadlineWhere = { year, ...(month && { month }) };
 
     const totalDeadlines = await this.prisma.deadline.count({
-      where: deadlineWhere,
+      where: {
+        ...deadlineWhere,
+        status: { not: 'CANCELADO' }
+      },
     });
 
     const pendingDeadlines = await this.prisma.deadline.count({
@@ -37,7 +40,7 @@ export class DashboardService {
     // Breakdown by month for charts
     const monthlyDataRaw = await this.prisma.deadline.groupBy({
       by: ['month', 'status'],
-      where: { year },
+      where: { year, status: { not: 'CANCELADO' } },
       _count: { id: true },
     });
 

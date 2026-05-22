@@ -72,11 +72,19 @@ export const CompanyForm: React.FC = () => {
 
   useEffect(() => {
     if (company) {
-      setForm({
-        ...form,
+      const parsedFlags: any = {};
+      if (company.fiscalParameters) {
+        company.fiscalParameters.forEach((p: any) => {
+          parsedFlags[p.code] = p.value === 'true';
+        });
+      }
+      
+      setForm(prevForm => ({
+        ...prevForm,
         ...company,
+        ...parsedFlags,
         activities: company.activities || [],
-      });
+      }));
     }
   }, [company]);
 
@@ -86,6 +94,21 @@ export const CompanyForm: React.FC = () => {
       if (payload.isExemptStateRegistration) {
           payload.stateRegistration = '';
       }
+
+      // Pack boolean flags into fiscalParameters
+      const flags = [
+        'hasMovement', 'hasOutboundDocs', 'hasInboundDocs', 'hasServiceDocs',
+        'taxSimplesNacional', 'taxIss', 'taxIcms', 'taxPis', 'taxCofins', 'taxIrpj', 'taxCsll',
+        'obFima', 'obSintegra', 'obSpedIcms', 'obEfdContribuicoes', 'obDctfWeb'
+      ];
+      payload.fiscalParameters = {};
+      flags.forEach(f => {
+        if (payload[f] !== undefined) {
+          payload.fiscalParameters[f] = payload[f] ? 'true' : 'false';
+          delete payload[f];
+        }
+      });
+
       if (isEdit) return api.patch(`/companies/${id}`, payload);
       return api.post('/companies', payload);
     },
