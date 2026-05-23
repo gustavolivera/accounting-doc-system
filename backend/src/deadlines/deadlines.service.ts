@@ -151,11 +151,17 @@ export class DeadlinesService {
 
       const dateString = adjustedDate.toISOString().split('T')[0];
 
+      const dayStart = new Date(adjustedDate);
+      dayStart.setHours(0, 0, 0, 0);
+      
+      const dayEnd = new Date(adjustedDate);
+      dayEnd.setHours(23, 59, 59, 999);
+
       const fiscalDay = await this.prisma.fiscalCalendarDay.findFirst({
         where: {
           date: {
-            gte: new Date(adjustedDate.setHours(0, 0, 0, 0)),
-            lt: new Date(adjustedDate.setHours(23, 59, 59, 999)),
+            gte: dayStart,
+            lt: dayEnd,
           },
         },
       });
