@@ -11,8 +11,20 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
+  role      Role     @default(OPERATOR)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  deliveryEvents      DeliveryEvent[]
+  linkedObligations   CompanyObligation[] @relation("LinkedObligations")
+  unlinkedObligations CompanyObligation[] @relation("UnlinkedObligations")
+  auditEvents         AuditEvent[]
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
 }
 
 // Enums for Company and Obligations
@@ -33,6 +45,7 @@ enum DeadlineType {
   FEDERAL
   ESTADUAL
   MUNICIPAL
+  OPERACIONAL
 }
 
 enum Periodicity {
@@ -46,6 +59,7 @@ enum DeadlineStatus {
   PENDENTE
   ENTREGUE
   ATRASADO
+  CANCELADO
 }
 
 enum ConditionOperator {
@@ -70,38 +84,25 @@ model Company {
   // Activities 
   activities  ActivityType[] 
 
-  // Movement Booleans
-  hasMovement     Boolean @default(false)
-  hasOutboundDocs Boolean @default(false) // "notas de saída"
-  hasInboundDocs  Boolean @default(false) // "notas de entrada"
-  hasServiceDocs  Boolean @default(false) // "notas de serviço"
-
-  // Tax Booleans
-  taxSimplesNacional Boolean @default(false)
-  taxIss             Boolean @default(false)
-  taxIcms            Boolean @default(false)
-  taxPis             Boolean @default(false)
-  taxCofins          Boolean @default(false)
-  taxIrpj            Boolean @default(false)
-  taxCsll            Boolean @default(false)
-
-  // Obligation Booleans 
-  obFima              Boolean @default(false)
-  obSintegra          Boolean @default(false)
-  obSpedIcms          Boolean @default(false)
-  obEfdContribuicoes  Boolean @default(false)
-  obDctfWeb           Boolean @default(false)
-
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // Existing relation
-  controls MonthlyControl[]
   
   // New Relations
   obligations CompanyObligation[]
   deadlines   Deadline[]
+  fiscalParameters CompanyFiscalParameter[]
+}
+
+model CompanyFiscalParameter {
+  id        String  @id @default(uuid())
+  companyId String
+  code      String  // e.g., "HAS_MOVEMENT", "TAX_ISS"
+  value     String  // e.g., "true", "false"
+  
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@unique([companyId, code])
 }
 
 model Obligation {
@@ -116,11 +117,13 @@ model Obligation {
 
   isActive    Boolean @default(true)
   
-  conditions  ObligationCondition[]
+  conditions  ObligationCondition[] // Legacy
+  ruleVersions ObligationRuleVersion[]
   companies   CompanyObligation[]
   deadlines   Deadline[]
 }
 
+// Legacy condition
 model ObligationCondition {
   id           String   @id @default(uuid())
   obligationId String
@@ -131,6 +134,48 @@ model ObligationCondition {
   obligation   Obligation @relation(fields: [obligationId], references: [id])
 }
 
+enum CriterionType {
+  TAX_REGIME
+  ACTIVITY
+  BOOLEAN_FLAG
+}
+
+model EligibilityCriterion {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  type        CriterionType
+  description String?
+  isActive    Boolean  @default(true)
+  
+  ruleCriteria ObligationRuleCriterion[]
+}
+
+model ObligationRuleVersion {
+  id           String   @id @default(uuid())
+  obligationId String
+  version      Int
+  isActive     Boolean  @default(false)
+  validFrom    DateTime @default(now())
+  validTo      DateTime?
+  
+  obligation   Obligation @relation(fields: [obligationId], references: [id])
+  criteria     ObligationRuleCriterion[]
+
+  @@unique([obligationId, version])
+}
+
+model ObligationRuleCriterion {
+  id           String   @id @default(uuid())
+  versionId    String
+  criterionId  String
+  operator     ConditionOperator
+  value        String
+  
+  version      ObligationRuleVersion @relation(fields: [versionId], references: [id])
+  criterion    EligibilityCriterion  @relation(fields: [criterionId], references: [id])
+}
+
 model CompanyObligation {
   id           String   @id @default(uuid())
   companyId    String
@@ -139,8 +184,15 @@ model CompanyObligation {
   isActive     Boolean @default(true)
   createdAt    DateTime @default(now())
   
+  linkedAt     DateTime @default(now())
+  linkedById   String?
+  unlinkedAt   DateTime?
+  unlinkedById String?
+  
   company      Company    @relation(fields: [companyId], references: [id])
   obligation   Obligation @relation(fields: [obligationId], references: [id])
+  linkedBy     User?      @relation("LinkedObligations", fields: [linkedById], references: [id])
+  unlinkedBy   User?      @relation("UnlinkedObligations", fields: [unlinkedById], references: [id])
 
   @@unique([companyId, obligationId])
 }
@@ -158,6 +210,7 @@ model Deadline {
   
   company      Company    @relation(fields: [companyId], references: [id])
   obligation   Obligation @relation(fields: [obligationId], references: [id])
+  events       DeliveryEvent[]
   
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -165,24 +218,37 @@ model Deadline {
   @@unique([companyId, obligationId, month, year])
 }
 
-// Keeping existing MonthlyControl to avoid breaking legacy code immediately, 
-// though it seems redundant with Deadline.
-enum DocumentStatus {
-  PENDING
-  DELIVERED
-  NO_DOCUMENTS
+model DeliveryEvent {
+  id           String   @id @default(uuid())
+  deadlineId   String
+  userId       String
+  status       DeadlineStatus
+  observation  String?
+  evidenceUrl  String?
+  createdAt    DateTime @default(now())
+
+  deadline     Deadline @relation(fields: [deadlineId], references: [id])
+  user         User     @relation(fields: [userId], references: [id])
 }
 
-model MonthlyControl {
-  id          String         @id @default(uuid())
-  companyId   String
-  month       Int
-  year        Int
-  status      DocumentStatus @default(PENDING)
-  observation String?
-  updatedAt   DateTime       @updatedAt
-
-  company Company @relation(fields: [companyId], references: [id])
-
-  @@unique([companyId, month, year])
+model FiscalCalendarDay {
+  id           String   @id @default(uuid())
+  date         DateTime @unique
+  description  String?
+  isHoliday    Boolean  @default(false)
+  isWeekend    Boolean  @default(false)
 }
+
+model AuditEvent {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  entity      String
+  entityId    String
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id])
+}
+
+// Legacy MonthlyControl was removed.

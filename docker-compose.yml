@@ -10,7 +10,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/accounting_db?schema=public
       - JWT_SECRET=supersecretkey
-    command: sh -c "npx prisma db push && npx prisma db seed && npm run start:prod"
+      - TZ=America/Sao_Paulo
+    command: sh -c "npx prisma db push --accept-data-loss && npx prisma db seed && npm run start:prod"
     depends_on:
       - db
     restart: always
@@ -24,7 +25,7 @@ services:
     depends_on:
       - backend
     environment:
-        - VITE_API_URL=http://localhost:3000
+      - VITE_API_URL=http://localhost:3000
     restart: always
 
   db:

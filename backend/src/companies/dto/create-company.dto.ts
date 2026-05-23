@@ -1,7 +1,15 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean, IsEnum, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  IsArray,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TaxRegime, ActivityType } from '@prisma/client';
-
+import { IsCnpj } from './is-cnpj.validator';
 export class CreateCompanyDto {
   @ApiProperty({ description: 'Internal unique code for the company' })
   @IsString()
@@ -9,19 +17,22 @@ export class CreateCompanyDto {
   internalCode?: string;
 
   @ApiProperty({ description: 'Corporate Name (Razão Social)' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'A Razão Social deve ser um texto' })
+  @IsNotEmpty({ message: 'A Razão Social é obrigatória' })
   corporateName: string;
 
   @ApiProperty({ description: 'Trade Name (Nome Fantasia)' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'O Nome Fantasia deve ser um texto' })
+  @IsNotEmpty({ message: 'O Nome Fantasia é obrigatório' })
   tradeName: string;
 
   @ApiProperty({ description: 'CNPJ (14 digits)' })
-  @IsString()
-  @IsNotEmpty()
-  // Add custom CNPJ validation logic if needed, usually done in service or custom validator
+  @IsString({ message: 'O CNPJ deve ser um texto' })
+  @IsNotEmpty({ message: 'O CNPJ é obrigatório' })
+  @IsCnpj({ message: 'O CNPJ informado não é válido' })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.replace(/\D/g, '') : value,
+  )
   cnpj: string;
 
   @ApiPropertyOptional({ description: 'State Registration Number' })
@@ -29,14 +40,17 @@ export class CreateCompanyDto {
   @IsOptional()
   stateRegistration?: string;
 
-  @ApiProperty({ description: 'Is Exempt from State Registration', default: false })
+  @ApiProperty({
+    description: 'Is Exempt from State Registration',
+    default: false,
+  })
   @IsBoolean()
   @IsOptional()
   isExemptStateRegistration?: boolean;
 
   @ApiProperty({ description: 'City' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'O Município deve ser um texto' })
+  @IsNotEmpty({ message: 'O Município é obrigatório' })
   city: string;
 
   @ApiPropertyOptional({ description: 'Fiscal Observations' })
@@ -49,92 +63,20 @@ export class CreateCompanyDto {
   @IsOptional()
   taxRegime?: TaxRegime;
 
-  @ApiProperty({ enum: ActivityType, isArray: true, description: 'List of Activities' })
+  @ApiProperty({
+    enum: ActivityType,
+    isArray: true,
+    description: 'List of Activities',
+  })
   @IsArray()
   @IsEnum(ActivityType, { each: true })
   @IsOptional()
   activities?: ActivityType[];
 
-  // Movement Booleans
-  @ApiProperty({ default: false })
-  @IsBoolean()
+  @ApiPropertyOptional({
+    description: 'Fiscal Parameters key-value pairs',
+    example: { hasMovement: 'true', taxIss: 'false' },
+  })
   @IsOptional()
-  hasMovement?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  hasOutboundDocs?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  hasInboundDocs?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  hasServiceDocs?: boolean;
-
-  // Tax Booleans
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxSimplesNacional?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxIss?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxIcms?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxPis?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxCofins?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxIrpj?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  taxCsll?: boolean;
-
-  // Obligation Booleans
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obFima?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obSintegra?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obSpedIcms?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obEfdContribuicoes?: boolean;
-
-  @ApiProperty({ default: false })
-  @IsBoolean()
-  @IsOptional()
-  obDctfWeb?: boolean;
+  fiscalParameters?: Record<string, string>;
 }

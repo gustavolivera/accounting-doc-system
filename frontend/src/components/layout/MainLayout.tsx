@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { 
+  Home, 
+  Building2, 
+  FileText, 
+  CalendarClock, 
+  ClipboardList, 
+  Users, 
+  LogOut, 
+  Menu, 
+  ChevronLeft 
+} from 'lucide-react';
 
 export const MainLayout: React.FC = () => {
-  const { logout, user } = useAuth();
+  const { logout, user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -13,13 +24,16 @@ export const MainLayout: React.FC = () => {
   };
 
   const navItems = [
-    { to: '/', label: 'Início', icon: '🏠' },
-    { to: '/companies', label: 'Empresas', icon: '🏢' },
-    { to: '/documents', label: 'Controle Mensal', icon: '📄' },
-    { to: '/obligations', label: 'Obrigações', icon: '📋' },
-    { to: '/deadlines', label: 'Prazos', icon: '⏰' },
-    { to: '/users', label: 'Usuários', icon: '👥' },
+    { to: '/', label: 'Início', icon: <Home size={20} /> },
+    { to: '/companies', label: 'Empresas', icon: <Building2 size={20} /> },
+    { to: '/documents', label: 'Controle Mensal', icon: <FileText size={20} /> },
+    { to: '/deadlines', label: 'Prazos', icon: <CalendarClock size={20} /> },
   ];
+
+  if (isAdmin) {
+    navItems.splice(3, 0, { to: '/obligations', label: 'Obrigações', icon: <ClipboardList size={20} /> });
+    navItems.push({ to: '/users', label: 'Usuários', icon: <Users size={20} /> });
+  }
 
   return (
     <div className="app-container">
@@ -53,10 +67,13 @@ export const MainLayout: React.FC = () => {
               border: 'none', 
               color: 'white', 
               cursor: 'pointer',
-              padding: '0.5rem'
+              padding: '0.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
-            {collapsed ? '☰' : '«'}
+            {collapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
           </button>
         </div>
 
@@ -77,7 +94,7 @@ export const MainLayout: React.FC = () => {
               title={collapsed ? item.label : ''}
               end={item.to === '/'}
             >
-              <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
+              <span style={{ display: 'flex', alignItems: 'center' }}>{item.icon}</span>
               {!collapsed && <span>{item.label}</span>}
             </NavLink>
           ))}
@@ -112,7 +129,7 @@ export const MainLayout: React.FC = () => {
                  justifyContent: 'center'
               }}
             >
-              🚪
+              <LogOut size={18} />
             </button>
           </div>
         </div>

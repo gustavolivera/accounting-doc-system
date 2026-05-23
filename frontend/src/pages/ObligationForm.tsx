@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useUI } from '../context/UIContext';
+import { Eye, Save, Trash2, X } from 'lucide-react';
 
 const TYPES = ['FEDERAL', 'ESTADUAL', 'MUNICIPAL'];
 const PERIODICITIES = ['MENSAL', 'BIMESTRAL', 'TRIMESTRAL', 'ANUAL'];
@@ -24,10 +26,37 @@ const OPERATORS = [
   { value: 'CONTAINS', label: 'Contém / Pertence a' },
 ];
 
+const FIELD_OPTIONS: Record<string, {value: string, label: string}[]> = {
+  taxRegime: [
+    { value: 'SIMPLES_NACIONAL', label: 'Simples Nacional' },
+    { value: 'LUCRO_PRESUMIDO', label: 'Lucro Presumido' },
+    { value: 'LUCRO_REAL', label: 'Lucro Real' },
+  ],
+  activities: [
+    { value: 'SERVICO', label: 'Serviço' },
+    { value: 'COMERCIO', label: 'Comércio' },
+    { value: 'INDUSTRIA', label: 'Indústria' },
+  ],
+  boolean: [
+    { value: 'true', label: 'Sim' },
+    { value: 'false', label: 'Não' },
+  ]
+};
+
+const getFieldType = (field: string) => {
+  if (['hasMovement', 'hasOutboundDocs', 'hasInboundDocs', 'taxSimplesNacional', 'taxIcms', 'obSintegra', 'obSpedIcms'].includes(field)) {
+    return 'boolean';
+  }
+  if (field === 'taxRegime') return 'taxRegime';
+  if (field === 'activities') return 'activities';
+  return 'text';
+};
+
 export const ObligationForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { showToast } = useUI();
   const isEdit = !!id;
 
   const [form, setForm] = useState({
@@ -63,8 +92,13 @@ export const ObligationForm: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['obligations'] });
+      showToast(isEdit ? 'Obrigação atualizada com sucesso' : 'Obrigação criada com sucesso', 'success');
       navigate('/obligations');
     },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || 'Erro ao salvar a obrigação';
+      showToast(Array.isArray(message) ? message[0] : message, 'error');
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -94,6 +128,26 @@ export const ObligationForm: React.FC = () => {
     });
   };
 
+  const [previewData, setPreviewData] = useState<{ totalActiveCompanies: number; affectedCount: number; affectedCompanies: any[] } | null>(null);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+
+  const handlePreview = async () => {
+    setIsPreviewing(true);
+    try {
+      const criteria = form.conditions.map(c => ({
+        criterionCode: c.field,
+        operator: c.operator,
+        value: c.value
+      }));
+      const res = await api.post('/rules/preview', { criteria });
+      setPreviewData(res.data);
+    } catch (err) {
+      showToast('Erro ao pré-visualizar as regras.', 'error');
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
   if (isEdit && isLoading) return <div>Carregando...</div>;
 
   return (
@@ -104,9 +158,11 @@ export const ObligationForm: React.FC = () => {
             <p style={{ marginBottom: 0 }}>Defina os detalhes e regras da obrigação</p>
          </div>
          <div style={{ display: 'flex', gap: '8px' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => navigate('/obligations')}>Cancelar</button>
-            <button type="button" className="btn btn-primary" onClick={handleSubmit}>
-                {mutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+            <button type="button" className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => navigate('/obligations')}>
+              <X size={18} /> Cancelar
+            </button>
+            <button type="button" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={handleSubmit}>
+                <Save size={18} /> {mutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
             </button>
          </div>
       </div>
@@ -119,7 +175,7 @@ export const ObligationForm: React.FC = () => {
              <div className="form-grid">
                 <div className="col-6">
                    <div className="form-group">
-                      <label>Nome da Obrigação</label>
+                      <label>Nome da Obrigação <span style={{ color: 'red' }}>*</span></label>
                       <input 
                         value={form.name} 
                         onChange={e => setForm({...form, name: e.target.value})} 
@@ -170,7 +226,7 @@ export const ObligationForm: React.FC = () => {
              <div className="form-grid">
                <div className="col-4">
                   <div className="form-group">
-                    <label>Periodicidade</label>
+                    <label>Periodicidade <span style={{ color: 'red' }}>*</span></label>
                     <select 
                       value={form.periodicity} 
                       onChange={e => setForm({...form, periodicity: e.target.value})}
@@ -182,7 +238,7 @@ export const ObligationForm: React.FC = () => {
                </div>
                <div className="col-4">
                   <div className="form-group">
-                    <label>Dia Fixo de Vencimento</label>
+                    <label>Dia Fixo de Vencimento <span style={{ color: 'red' }}>*</span></label>
                     <input 
                       type="number" 
                       min="1" max="31"
@@ -241,24 +297,63 @@ export const ObligationForm: React.FC = () => {
                     </div>
                     <div style={{ flex: 2 }}>
                        <label style={{ fontSize: '0.75rem' }}>Valor Esperado</label>
-                       <input 
-                          value={cond.value} 
-                          onChange={e => updateCondition(index, 'value', e.target.value)}
-                          placeholder="Ex: SIMPLES_NACIONAL"
-                       />
+                       {getFieldType(cond.field) !== 'text' ? (
+                          <select
+                            value={cond.value}
+                            onChange={e => updateCondition(index, 'value', e.target.value)}
+                          >
+                            <option value="" disabled>Selecione...</option>
+                            {FIELD_OPTIONS[getFieldType(cond.field)]?.map(opt => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                       ) : (
+                          <input 
+                             value={cond.value} 
+                             onChange={e => updateCondition(index, 'value', e.target.value)}
+                             placeholder="Ex: SP"
+                          />
+                       )}
                     </div>
                     <button 
                       type="button" 
                       className="btn btn-danger btn-sm" 
                       onClick={() => removeCondition(index)}
                       title="Remover regra"
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                     >
-                      Remover
+                      <Trash2 size={14} /> Remover
                     </button>
                  </div>
                ))}
             </div>
             <p style={{ fontSize: '0.75rem', marginTop: '0.5rem' }}>* A empresa deve atender a <strong>TODAS</strong> as condições para que a obrigação seja aplicada.</p>
+            
+            <div style={{ marginTop: '1rem' }}>
+               <button 
+                 type="button" 
+                 className="btn btn-secondary" 
+                 onClick={handlePreview} 
+                 disabled={isPreviewing || form.conditions.length === 0}
+                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+               >
+                 {isPreviewing ? 'Calculando...' : <><Eye size={18} /> Pré-visualizar Impacto</>}
+               </button>
+            </div>
+
+            {previewData && (
+              <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'var(--color-info-bg)', border: '1px solid var(--color-info)', borderRadius: 'var(--radius-md)' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-info)' }}>Resultado da Simulação</h4>
+                <p style={{ margin: 0, fontSize: '0.875rem' }}>
+                  <strong>{previewData.affectedCount}</strong> de <strong>{previewData.totalActiveCompanies}</strong> empresas ativas se enquadram nestas regras.
+                </p>
+                {previewData.affectedCount > 0 && (
+                  <div style={{ marginTop: '0.5rem', maxHeight: '100px', overflowY: 'auto', fontSize: '0.75rem', background: 'white', padding: '0.5rem', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+                     {previewData.affectedCompanies.map(c => <div key={c.id}>- {c.tradeName}</div>)}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </form>

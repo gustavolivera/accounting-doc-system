@@ -3,7 +3,6 @@
 # Dependencies
 node_modules/
 **/node_modules/
-package-lock.json (Optional, some keep it, but user said "tudo que é possível". Wait, usually package-lock.json IS committed. I won't ignore it.)
 
 # Build outputs
 dist/
@@ -51,7 +50,6 @@ Thumbs.db
 desktop.ini
 
 # Prisma
-/backend/prisma/migrations/ (Wait, migrations SHOULD be committed. I'll NOT ignore these.)
 *.db
 *.db-journal
 
@@ -59,6 +57,6 @@ desktop.ini
 .vercel/
 .netlify/
 .turbo/
-. agents/ (Wait, the user in a previous conversation asked to ignore .agents and specs. I should check Conversation Logs if possible, but the prompt says 92ccf292... c156a3da... summary says "Specifically adding the .agents and specs directories to be ignored".)
 .agents/
 specs/
+AGENTS.md

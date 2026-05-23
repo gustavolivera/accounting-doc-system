@@ -3,12 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
+import { useUI } from '../context/UIContext';
+
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useUI();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,7 +19,7 @@ export const Login: React.FC = () => {
       login(response.data.access_token, response.data.user);
       navigate('/');
     } catch (err: any) {
-      setError('Credenciais inválidas. Tente novamente.');
+      showToast('Credenciais inválidas. Tente novamente.', 'error');
     }
   };
 
@@ -29,19 +31,6 @@ export const Login: React.FC = () => {
           <p className="text-muted">Entre com suas credenciais.</p>
         </div>
         
-        {error && (
-          <div style={{ 
-            color: 'var(--danger)', 
-            marginBottom: '1.5rem', 
-            padding: '0.75rem', 
-            background: '#fee2e2', 
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            textAlign: 'center' 
-          }}>
-            {error}
-          </div>
-        )}
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
