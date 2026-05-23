@@ -17,6 +17,16 @@ const ACTIVITIES = [
   { value: 'INDUSTRIA', label: 'Indústria' },
 ];
 
+const maskCnpj = (value: string) => {
+  return value
+    .replace(/\D/g, '') // remove tudo que não for dígito
+    .replace(/^(\d{2})(\d)/, '$1.$2') // ponto após 2 dígitos
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3') // ponto após 3 dígitos
+    .replace(/\.(\d{3})(\d)/, '.$1/$2') // barra após 3 dígitos
+    .replace(/(\d{4})(\d)/, '$1-$2') // traço após 4 dígitos
+    .slice(0, 18); // limita a 18 caracteres (14 dígitos + 4 pontuações)
+};
+
 export const CompanyForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -186,7 +196,7 @@ export const CompanyForm: React.FC = () => {
                   <input
                     type="text"
                     value={form.cnpj}
-                    onChange={e => setForm({ ...form, cnpj: e.target.value })}
+                    onChange={e => setForm({ ...form, cnpj: maskCnpj(e.target.value) })}
                     required
                     disabled={isEdit}
                     placeholder="00.000.000/0000-00"

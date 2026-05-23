@@ -144,7 +144,7 @@ export const DocumentControl: React.FC = () => {
                 value={selectedCompanyId}
                 onChange={(e) => setSelectedCompanyId(e.target.value)}
               >
-                <option value="">-- Selecione --</option>
+                <option value="" className='text-gray-400'> Selecione </option>
                 {companies?.map(c => (
                   <option key={c.id} value={c.id}>{c.tradeName}</option>
                 ))}
