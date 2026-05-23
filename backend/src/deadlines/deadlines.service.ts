@@ -176,6 +176,8 @@ export class DeadlinesService {
     search?: string,
     companyId?: string,
     year?: number,
+    month?: number,
+    status?: DeadlineStatus,
   ) {
     const skip = (page - 1) * limit;
     const where: any = {
@@ -192,6 +194,12 @@ export class DeadlinesService {
     }
     if (year) {
       where.year = year;
+    }
+    if (month && month !== 0) {
+      where.month = month;
+    }
+    if (status) {
+      where.status = status;
     }
 
     const [data, total] = await Promise.all([

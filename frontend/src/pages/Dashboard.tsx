@@ -2,14 +2,12 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import { Plus, FileText, CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, FileText, CalendarClock } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const [year, setYear] = React.useState(new Date().getFullYear());
-
   const { data: metrics } = useQuery({
-    queryKey: ['dashboard-metrics', year],
-    queryFn: () => api.get('/dashboard/metrics', { params: { year } }).then(res => res.data),
+    queryKey: ['dashboard-metrics'],
+    queryFn: () => api.get('/dashboard/metrics').then(res => res.data),
   });
 
   return (
@@ -18,11 +16,6 @@ export const Dashboard: React.FC = () => {
         <div>
           <h1>Visão Geral</h1>
           <p style={{ marginBottom: 0 }}>Bem-vindo ao sistema de gestão contábil</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
-          <button className="btn btn-sm btn-secondary" onClick={() => setYear(year - 1)}><ChevronLeft size={16} /></button>
-          <span style={{ fontWeight: 600, padding: '0 1rem', minWidth: '4rem', textAlign: 'center' }}>{year}</span>
-          <button className="btn btn-sm btn-secondary" onClick={() => setYear(year + 1)}><ChevronRight size={16} /></button>
         </div>
       </div>
 

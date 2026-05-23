@@ -32,16 +32,21 @@ export class DeadlinesController {
     @Query('search') search?: string,
     @Query('companyId') companyId?: string,
     @Query('year') year?: string,
+    @Query('month') month?: string,
+    @Query('status') status?: DeadlineStatus,
   ) {
     const pageNumber = page ? parseInt(page, 10) : 1;
     const limitNumber = limit ? parseInt(limit, 10) : 50;
     const yearNumber = year ? parseInt(year, 10) : undefined;
+    const monthNumber = month ? parseInt(month, 10) : undefined;
     return this.deadlinesService.findAll(
       pageNumber,
       limitNumber,
       search,
       companyId,
       yearNumber,
+      monthNumber,
+      status,
     );
   }
 
