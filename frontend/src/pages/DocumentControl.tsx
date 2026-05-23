@@ -75,20 +75,20 @@ export const DocumentControl: React.FC = () => {
 
   const handleStatusChange = (monthIndex: number, newStatus: string) => {
     const currentControl = getControl(monthIndex);
-    mutation.mutate({ 
-      month: monthIndex + 1, 
+    mutation.mutate({
+      month: monthIndex + 1,
       status: newStatus,
       observation: currentControl?.observation
     });
   };
 
   const handleObservationChange = (monthIndex: number, value: string) => {
-     const currentStatus = getStatus(monthIndex);
-     mutation.mutate({
-       month: monthIndex + 1,
-       status: currentStatus,
-       observation: value
-     });
+    const currentStatus = getStatus(monthIndex);
+    mutation.mutate({
+      month: monthIndex + 1,
+      status: currentStatus,
+      observation: value
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -116,31 +116,31 @@ export const DocumentControl: React.FC = () => {
 
       <div className="card">
         <div className="form-grid">
-           <div className="col-4">
-             <div className="form-group">
-                <label>Selecione a Empresa</label>
-                <select 
-                value={selectedCompanyId} 
+          <div className="col-4">
+            <div className="form-group">
+              <label>Selecione a Empresa</label>
+              <select
+                value={selectedCompanyId}
                 onChange={(e) => setSelectedCompanyId(e.target.value)}
-                >
+              >
                 <option value="">-- Selecione --</option>
                 {companies?.map(c => (
-                    <option key={c.id} value={c.id}>{c.tradeName}</option>
+                  <option key={c.id} value={c.id}>{c.tradeName}</option>
                 ))}
-                </select>
-             </div>
-           </div>
-           
-           <div className="col-3">
-              <div className="form-group">
-                 <label>Ano de Referência</label>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <button className="btn btn-secondary" style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setYear(year - 1)}><ChevronLeft size={16} /></button>
-                    <input type="number" value={year} readOnly style={{ textAlign: 'center' }} />
-                    <button className="btn btn-secondary" style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setYear(year + 1)}><ChevronRight size={16} /></button>
-                 </div>
+              </select>
+            </div>
+          </div>
+
+          <div className="col-3">
+            <div className="form-group">
+              <label>Ano de Referência</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button className="btn btn-secondary" style={{ width: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setYear(year - 1)}><ChevronLeft size={16} /></button>
+                <input type="number" value={year} readOnly style={{ textAlign: 'center' }} />
+                <button className="btn btn-secondary" style={{ width: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setYear(year + 1)}><ChevronRight size={16} /></button>
               </div>
-           </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -149,12 +149,12 @@ export const DocumentControl: React.FC = () => {
           {MONTHS.map((month, index) => {
             const status = getStatus(index);
             const observation = getObservation(index);
-            
+
             return (
-              <div 
-                key={month} 
-                className="card" 
-                style={{ 
+              <div
+                key={month}
+                className="card"
+                style={{
                   borderTop: `4px solid ${getStatusColor(status)}`,
                   display: 'flex',
                   flexDirection: 'column',
@@ -165,11 +165,11 @@ export const DocumentControl: React.FC = () => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <h3 style={{ margin: 0, marginTop: 0 }}>{month}</h3>
-                  <div 
-                    style={{ 
-                      padding: '0.25rem 0.75rem', 
-                      borderRadius: '999px', 
-                      fontSize: '0.75rem', 
+                  <div
+                    style={{
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '999px',
+                      fontSize: '0.75rem',
                       fontWeight: '700',
                       backgroundColor: getStatusBg(status),
                       color: getStatusColor(status),
@@ -182,8 +182,8 @@ export const DocumentControl: React.FC = () => {
 
                 <div className="form-group">
                   <label>Status</label>
-                  <select 
-                    value={status} 
+                  <select
+                    value={status}
                     onChange={(e) => handleStatusChange(index, e.target.value)}
                   >
                     <option value="PENDING">Pendente</option>
@@ -193,18 +193,18 @@ export const DocumentControl: React.FC = () => {
                 </div>
 
                 <div className="form-group" style={{ flex: 1 }}>
-                   <label>Observações</label>
-                   <textarea 
-                     rows={3} 
-                     defaultValue={observation}
-                     onBlur={(e) => {
-                       if (e.target.value !== observation) {
-                         handleObservationChange(index, e.target.value);
-                       }
-                     }}
-                     placeholder="Adicionar notas..."
-                     style={{ minHeight: '80px' }}
-                   />
+                  <label>Observações</label>
+                  <textarea
+                    rows={3}
+                    defaultValue={observation}
+                    onBlur={(e) => {
+                      if (e.target.value !== observation) {
+                        handleObservationChange(index, e.target.value);
+                      }
+                    }}
+                    placeholder="Adicionar notas..."
+                    style={{ minHeight: '80px' }}
+                  />
                 </div>
               </div>
             );
@@ -213,7 +213,7 @@ export const DocumentControl: React.FC = () => {
       ) : (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ marginBottom: '1rem', color: 'var(--color-gray-300)' }}>
-             <MousePointer2 size={48} />
+            <MousePointer2 size={48} />
           </div>
           <p>Selecione uma empresa acima para visualizar e gerenciar os documentos.</p>
         </div>
