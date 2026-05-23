@@ -40,8 +40,17 @@ export const DeadlineDashboard: React.FC = () => {
   const limit = 10;
 
   const { data, isLoading } = useQuery<PaginatedResponse>({
-    queryKey: ['deadlines', page, filters.company],
-    queryFn: () => api.get('/deadlines', { params: { page, limit, search: filters.company } }).then(res => res.data),
+    queryKey: ['deadlines', page, filters],
+    queryFn: () => api.get('/deadlines', { 
+      params: { 
+        page, 
+        limit, 
+        search: filters.company,
+        year: filters.year,
+        month: filters.month === 0 ? undefined : filters.month,
+        status: filters.status || undefined
+      } 
+    }).then(res => res.data),
   });
 
   const updateStatusMutation = useMutation({
@@ -57,12 +66,6 @@ export const DeadlineDashboard: React.FC = () => {
   });
 
   const rawDeadlines = data?.data || [];
-  const filteredDeadlines = rawDeadlines.filter(d => {
-    if (filters.year && d.year !== Number(filters.year)) return false;
-    if (filters.month && d.month !== Number(filters.month)) return false;
-    if (filters.status && d.status !== filters.status) return false;
-    return true;
-  });
 
   const getStatusBadge = (status: string) => {
       if (status === 'ATRASADO') return 'badge-danger';
@@ -96,7 +99,7 @@ export const DeadlineDashboard: React.FC = () => {
             <div className="col-3">
                  <div className="form-group">
                     <label>Mês</label>
-                    <select value={filters.month} onChange={e => setFilters({...filters, month: Number(e.target.value)})}>
+                    <select value={filters.month} onChange={e => { setFilters({...filters, month: Number(e.target.value)}); setPage(1); }}>
                     <option value={0}>Todos</option>
                     {Array.from({length: 12}, (_, i) => i + 1).map(m => (
                         <option key={m} value={m}>{m}</option>
@@ -107,13 +110,13 @@ export const DeadlineDashboard: React.FC = () => {
             <div className="col-2">
                  <div className="form-group">
                     <label>Ano</label>
-                    <input type="number" value={filters.year} onChange={e => setFilters({...filters, year: Number(e.target.value)})} />
+                    <input type="number" value={filters.year} onChange={e => { setFilters({...filters, year: Number(e.target.value)}); setPage(1); }} />
                  </div>
             </div>
             <div className="col-3">
                  <div className="form-group">
                     <label>Status</label>
-                    <select value={filters.status} onChange={e => setFilters({...filters, status: e.target.value})}>
+                    <select value={filters.status} onChange={e => { setFilters({...filters, status: e.target.value}); setPage(1); }}>
                     <option value="">Todos</option>
                     <option value="PENDENTE">Pendente</option>
                     <option value="ENTREGUE">Entregue</option>
@@ -148,7 +151,7 @@ export const DeadlineDashboard: React.FC = () => {
             </thead>
             <tbody>
               {isLoading && <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center' }}>Carregando...</td></tr>}
-              {filteredDeadlines.map((d) => (
+              {rawDeadlines.map((d) => (
                 <tr key={d.id}>
                   <td>
                      <span style={{ fontWeight: 500 }}>{formatDate(d.dueDate)}</span>
@@ -210,7 +213,7 @@ export const DeadlineDashboard: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {!isLoading && filteredDeadlines.length === 0 && (
+              {!isLoading && rawDeadlines.length === 0 && (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
                     Nenhum prazo encontrado com os filtros selecionados.
