@@ -27,6 +27,7 @@ export const DocumentControl: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>(searchParams.get('companyId') || '');
   const [year, setYear] = useState(new Date().getFullYear());
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
   const queryClient = useQueryClient();
   const { showToast } = useUI();
 
@@ -107,6 +108,26 @@ export const DocumentControl: React.FC = () => {
     }
   };
 
+  const handleMarkAll = async (status: string) => {
+    setIsMarkingAll(true);
+    try {
+      await Promise.all(
+        MONTHS.map((_, index) =>
+          api.post(`/deadlines/document-control/${selectedCompanyId}/${year}/${index + 1}`, {
+            status,
+            observation: getObservation(index),
+          })
+        )
+      );
+      queryClient.invalidateQueries({ queryKey: ['document-controls', selectedCompanyId, year] });
+      showToast('Todos os meses atualizados com sucesso', 'success');
+    } catch (error) {
+      showToast('Erro ao atualizar os meses', 'error');
+    } finally {
+      setIsMarkingAll(false);
+    }
+  };
+
   return (
     <div>
       <div style={{ marginBottom: 'var(--spacing-lg)' }}>
@@ -141,75 +162,110 @@ export const DocumentControl: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {selectedCompanyId && (
+            <div className="col-5">
+              <div className="form-group">
+                <label>Marcar todos (Ações rápidas)</label>
+                <div style={{ display: 'flex', gap: '0.5rem', height: '38px', alignItems: 'center' }}>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    style={{ color: 'var(--color-warning)', borderColor: 'var(--color-warning)' }}
+                    onClick={() => handleMarkAll('PENDING')}
+                    disabled={isMarkingAll}
+                  >
+                    {isMarkingAll ? 'Aguarde...' : 'Pendente'}
+                  </button>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    style={{ color: 'var(--color-success)', borderColor: 'var(--color-success)' }}
+                    onClick={() => handleMarkAll('DELIVERED')}
+                    disabled={isMarkingAll}
+                  >
+                    {isMarkingAll ? 'Aguarde...' : 'Recebido'}
+                  </button>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => handleMarkAll('NO_DOCUMENTS')}
+                    disabled={isMarkingAll}
+                  >
+                    {isMarkingAll ? 'Aguarde...' : 'Sem Movimento'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {selectedCompanyId ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
-          {MONTHS.map((month, index) => {
-            const status = getStatus(index);
-            const observation = getObservation(index);
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            {MONTHS.map((month, index) => {
+              const status = getStatus(index);
+              const observation = getObservation(index);
 
-            return (
-              <div
-                key={month}
-                className="card"
-                style={{
-                  borderTop: `4px solid ${getStatusColor(status)}`,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  padding: '1.5rem',
-                  gap: '1rem',
-                  marginBottom: 0
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ margin: 0, marginTop: 0 }}>{month}</h3>
-                  <div
-                    style={{
-                      padding: '0.25rem 0.75rem',
-                      borderRadius: '999px',
-                      fontSize: '0.75rem',
-                      fontWeight: '700',
-                      backgroundColor: getStatusBg(status),
-                      color: getStatusColor(status),
-                      textTransform: 'uppercase'
-                    }}
-                  >
-                    {status === 'DELIVERED' ? 'Recebido' : status === 'NO_DOCUMENTS' ? 'Sem Movimento' : 'Pendente'}
+              return (
+                <div
+                  key={month}
+                  className="card"
+                  style={{
+                    borderTop: `4px solid ${getStatusColor(status)}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '1.5rem',
+                    gap: '1rem',
+                    marginBottom: 0
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, marginTop: 0 }}>{month}</h3>
+                    <div
+                      style={{
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '999px',
+                        fontSize: '0.75rem',
+                        fontWeight: '700',
+                        backgroundColor: getStatusBg(status),
+                        color: getStatusColor(status),
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      {status === 'DELIVERED' ? 'Recebido' : status === 'NO_DOCUMENTS' ? 'Sem Movimento' : 'Pendente'}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      value={status}
+                      onChange={(e) => handleStatusChange(index, e.target.value)}
+                    >
+                      <option value="PENDING">Pendente</option>
+                      <option value="DELIVERED">Recebido</option>
+                      <option value="NO_DOCUMENTS">Sem Movimento</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Observações</label>
+                    <textarea
+                      rows={3}
+                      defaultValue={observation}
+                      onBlur={(e) => {
+                        if (e.target.value !== observation) {
+                          handleObservationChange(index, e.target.value);
+                        }
+                      }}
+                      placeholder="Adicionar notas..."
+                      style={{ minHeight: '80px' }}
+                    />
                   </div>
                 </div>
-
-                <div className="form-group">
-                  <label>Status</label>
-                  <select
-                    value={status}
-                    onChange={(e) => handleStatusChange(index, e.target.value)}
-                  >
-                    <option value="PENDING">Pendente</option>
-                    <option value="DELIVERED">Recebido</option>
-                    <option value="NO_DOCUMENTS">Sem Movimento</option>
-                  </select>
-                </div>
-
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label>Observações</label>
-                  <textarea
-                    rows={3}
-                    defaultValue={observation}
-                    onBlur={(e) => {
-                      if (e.target.value !== observation) {
-                        handleObservationChange(index, e.target.value);
-                      }
-                    }}
-                    placeholder="Adicionar notas..."
-                    style={{ minHeight: '80px' }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       ) : (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ marginBottom: '1rem', color: 'var(--color-gray-300)' }}>
