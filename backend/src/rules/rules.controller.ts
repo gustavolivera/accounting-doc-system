@@ -6,12 +6,25 @@ import { ConditionOperator, Role } from '@prisma/client';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 
+import { IsArray, ValidateNested, IsString, IsEnum } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class CriterionDto {
+  @IsString()
+  criterionCode: string;
+
+  @IsEnum(ConditionOperator)
+  operator: ConditionOperator;
+
+  @IsString()
+  value: string;
+}
+
 export class PreviewRulesDto {
-  criteria: {
-    criterionCode: string;
-    operator: ConditionOperator;
-    value: string;
-  }[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CriterionDto)
+  criteria: CriterionDto[];
 }
 
 @ApiTags('rules')
