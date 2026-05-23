@@ -26,6 +26,32 @@ const OPERATORS = [
   { value: 'CONTAINS', label: 'Contém / Pertence a' },
 ];
 
+const FIELD_OPTIONS: Record<string, {value: string, label: string}[]> = {
+  taxRegime: [
+    { value: 'SIMPLES_NACIONAL', label: 'Simples Nacional' },
+    { value: 'LUCRO_PRESUMIDO', label: 'Lucro Presumido' },
+    { value: 'LUCRO_REAL', label: 'Lucro Real' },
+  ],
+  activities: [
+    { value: 'SERVICO', label: 'Serviço' },
+    { value: 'COMERCIO', label: 'Comércio' },
+    { value: 'INDUSTRIA', label: 'Indústria' },
+  ],
+  boolean: [
+    { value: 'true', label: 'Sim' },
+    { value: 'false', label: 'Não' },
+  ]
+};
+
+const getFieldType = (field: string) => {
+  if (['hasMovement', 'hasOutboundDocs', 'hasInboundDocs', 'taxSimplesNacional', 'taxIcms', 'obSintegra', 'obSpedIcms'].includes(field)) {
+    return 'boolean';
+  }
+  if (field === 'taxRegime') return 'taxRegime';
+  if (field === 'activities') return 'activities';
+  return 'text';
+};
+
 export const ObligationForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -271,11 +297,23 @@ export const ObligationForm: React.FC = () => {
                     </div>
                     <div style={{ flex: 2 }}>
                        <label style={{ fontSize: '0.75rem' }}>Valor Esperado</label>
-                       <input 
-                          value={cond.value} 
-                          onChange={e => updateCondition(index, 'value', e.target.value)}
-                          placeholder="Ex: SIMPLES_NACIONAL"
-                       />
+                       {getFieldType(cond.field) !== 'text' ? (
+                          <select
+                            value={cond.value}
+                            onChange={e => updateCondition(index, 'value', e.target.value)}
+                          >
+                            <option value="" disabled>Selecione...</option>
+                            {FIELD_OPTIONS[getFieldType(cond.field)]?.map(opt => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                       ) : (
+                          <input 
+                             value={cond.value} 
+                             onChange={e => updateCondition(index, 'value', e.target.value)}
+                             placeholder="Ex: SP"
+                          />
+                       )}
                     </div>
                     <button 
                       type="button" 
