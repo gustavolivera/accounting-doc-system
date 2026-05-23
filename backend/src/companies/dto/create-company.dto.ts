@@ -17,19 +17,19 @@ export class CreateCompanyDto {
   internalCode?: string;
 
   @ApiProperty({ description: 'Corporate Name (Razão Social)' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'A Razão Social deve ser um texto' })
+  @IsNotEmpty({ message: 'A Razão Social é obrigatória' })
   corporateName: string;
 
   @ApiProperty({ description: 'Trade Name (Nome Fantasia)' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'O Nome Fantasia deve ser um texto' })
+  @IsNotEmpty({ message: 'O Nome Fantasia é obrigatório' })
   tradeName: string;
 
   @ApiProperty({ description: 'CNPJ (14 digits)' })
-  @IsString()
-  @IsNotEmpty()
-  @IsCnpj()
+  @IsString({ message: 'O CNPJ deve ser um texto' })
+  @IsNotEmpty({ message: 'O CNPJ é obrigatório' })
+  @IsCnpj({ message: 'O CNPJ informado não é válido' })
   @Transform(({ value }) =>
     typeof value === 'string' ? value.replace(/\D/g, '') : value,
   )
@@ -49,8 +49,8 @@ export class CreateCompanyDto {
   isExemptStateRegistration?: boolean;
 
   @ApiProperty({ description: 'City' })
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'O Município deve ser um texto' })
+  @IsNotEmpty({ message: 'O Município é obrigatório' })
   city: string;
 
   @ApiPropertyOptional({ description: 'Fiscal Observations' })
