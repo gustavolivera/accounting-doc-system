@@ -175,7 +175,7 @@ export const ObligationForm: React.FC = () => {
              <div className="form-grid">
                 <div className="col-6">
                    <div className="form-group">
-                      <label>Nome da Obrigação</label>
+                      <label>Nome da Obrigação <span style={{ color: 'red' }}>*</span></label>
                       <input 
                         value={form.name} 
                         onChange={e => setForm({...form, name: e.target.value})} 
@@ -226,7 +226,7 @@ export const ObligationForm: React.FC = () => {
              <div className="form-grid">
                <div className="col-4">
                   <div className="form-group">
-                    <label>Periodicidade</label>
+                    <label>Periodicidade <span style={{ color: 'red' }}>*</span></label>
                     <select 
                       value={form.periodicity} 
                       onChange={e => setForm({...form, periodicity: e.target.value})}
@@ -238,7 +238,7 @@ export const ObligationForm: React.FC = () => {
                </div>
                <div className="col-4">
                   <div className="form-group">
-                    <label>Dia Fixo de Vencimento</label>
+                    <label>Dia Fixo de Vencimento <span style={{ color: 'red' }}>*</span></label>
                     <input 
                       type="number" 
                       min="1" max="31"
