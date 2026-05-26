@@ -177,6 +177,7 @@ export const ObligationForm: React.FC = () => {
                    <div className="form-group">
                       <label>Nome da Obrigação <span style={{ color: 'red' }}>*</span></label>
                       <input 
+                        type="text"
                         value={form.name} 
                         onChange={e => setForm({...form, name: e.target.value})} 
                         required 
@@ -309,6 +310,7 @@ export const ObligationForm: React.FC = () => {
                           </select>
                        ) : (
                           <input 
+                             type="text"
                              value={cond.value} 
                              onChange={e => updateCondition(index, 'value', e.target.value)}
                              placeholder="Ex: SP"
